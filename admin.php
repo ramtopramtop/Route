@@ -21,19 +21,10 @@ try {
     die("Не удалось подключиться: " . $e->getMessage());
   }
 
-#обработка нажатий кнопок
-?>
 
-<html>
-<body>
-Привет, <?php echo $_SESSION['user']; ?>, ты на секретной странице!!! :)
 
-<form method="POST">
-Имя <input name="new_user_name" type="text" value="<?php echo $_SESSION['user']; ?>">
-<input name="submit_name" type="submit" value="Изменить">
-</form>
 
-<?
+
 #обработка изменения имени
 if(isset($_POST['submit_name']))
 {
@@ -53,15 +44,7 @@ if(isset($_POST['submit_name']))
       #меняем имя в текущей сессии
       $_SESSION['user']=$_POST['new_user_name'];
 }
-?>
 
-<form method="POST">
-Пароль <input name="new_user_pass1" type="text">
-Пароль еще раз <input name="new_user_pass2" type="text">
-<input name="submit_pass" type="submit" value="Изменить пароль">
-</form>
-
-<?
 #обработка изменения пароля
 if(isset($_POST['submit_pass']))
 {
@@ -89,7 +72,6 @@ if(isset($_POST['submit_pass']))
     echo 'Пароли не совпадают';
   }
 }
-#Интерфейс для администраторов
 
 #запрос прав для получения данных администратора
     
@@ -97,45 +79,221 @@ $query_rights=$dbh->prepare("SELECT User.Access_Rights FROM User WHERE User.ID=:
 $query_rights->bindparam(':PDO_UserID',$_SESSION['user_id']);
 $query_rights->execute();
 $User_rights=$query_rights->fetch();
-#echo 'Права:'.$User_rights['Access_Rights'];
+
 #проверка прав доступа
 if($User_rights['Access_Rights']==2)
 {
-  #Формирование списка пользователей
-  $query_users_list=$dbh->prepare("SELECT User.ID, User.Name, User.Login, User.Access_Rights FROM User ");
-  $query_users_list->execute();
-  $Users_list=$query_users_list->fetch();
+  
 
+ #обработка изменения прав доступа
+
+  if(isset($_POST['user_rights_change']))
+  {
+  
+  try {           
+    $dbh->beginTransaction();
+
+    #выбираем вариант замены прав в зависимости от текущих прав доступа
+
+    if ($_POST['user_rights_change_current']==1)
+    {
+      $registration=$dbh->prepare("UPDATE User SET User.Access_Rights=2 WHERE User.ID=:PDO_UserID");
+    }
+    else
+    {
+      $registration=$dbh->prepare("UPDATE User SET User.Access_Rights=1 WHERE User.ID=:PDO_UserID");
+    }
+    
+    $registration->bindparam(':PDO_UserID',$_POST['user_rights_change_ID']);
+    $registration->execute();
+    $dbh->commit();
+       }
+   catch (Exception $e)
+    {
+    $dbh->rollBack();
+    echo "Ошибка: " . $e->getMessage();
+    }
+  }
+
+  #обработка изменения города
+  if(isset($_POST['town_change']))
+  {
+    try
+    {   
+      $dbh->beginTransaction();
+      $registration=$dbh->prepare("UPDATE Town SET Town.Name=:PDO_TownName WHERE Town.ID=:PDO_TownID");
+      $registration->bindparam(':PDO_TownID',$_POST['town_id']);
+      $registration->bindparam(':PDO_TownName',$_POST['town_name']);
+      $registration->execute();
+      $dbh->commit();
+    }
+    catch (Exception $e)
+    {
+      $dbh->rollBack();
+      echo "Ошибка: " . $e->getMessage();
+    }
+  }
+
+  #обработка удаления города
+  
+  if(isset($_POST['town_delete']))
+  {
+    try
+    {   
+      $dbh->beginTransaction();
+      $registration=$dbh->prepare("DELETE FROM Town WHERE Town.ID=:PDO_TownID");
+      $registration->bindparam(':PDO_TownID',$_POST['town_id']);
+      $registration->execute();
+      $dbh->commit();
+    }
+    catch (Exception $e)
+    {
+      $dbh->rollBack();
+      echo "Ошибка: " . $e->getMessage();
+    }
+  }
+
+  #обработка создания города
+  if(isset($_POST['town_create']))
+  {
+    try
+    {   
+      $dbh->beginTransaction();
+      $registration=$dbh->prepare("INSERT INTO Town SET Town.Name=:PDO_TownName");
+      $registration->bindparam(':PDO_TownName',$_POST['town_name']);
+      $registration->execute();
+      $dbh->commit();
+    }
+    catch (Exception $e)
+    {
+      $dbh->rollBack();
+      echo "Ошибка: " . $e->getMessage();
+    }
+  }
+
+  #приветствие для администратора
+
+  echo'<html>
+  <body>
+  Привет, '.$_SESSION['user'].', ты на секретной странице!!! :)';
+  
+  #вывод раздела администратора 
+  
+  #Формирование списка пользователей
+
+  $query_users_list=$dbh->prepare("SELECT User.ID, User.Name, User.Login, User.Access_Rights FROM User");
+  $query_users_list->execute();
+  $Users_list=$query_users_list->fetchAll();
+  
+  #вывод раздела администратора 
+  
+  echo '<h1>Управление пользователями</h1>';
+  
   #перебор массива пользователей
+
   foreach($Users_list as list($list_User_ID, $list_User_Name, $list_User_Login, $list_User_Access_Rights))
   {
     echo '<form method="POST">
-    Пользователь '.$list_User_Name.' логин '.$list_User_Login.' права '.$list_User_Access_Rights.'
+    Пользователь: '.$list_User_Name.', логин: '.$list_User_Login.', права: '.$list_User_Access_Rights.'
+    <input name="user_rights_change_ID" type="hidden" value="'.$list_User_ID.'">
+    <input name="user_rights_change_current" type="hidden" value="'.$list_User_Access_Rights.'">
     <input name="user_rights_change" type="submit" value="Изменить права">
     </form>';
 
   }
 
-
-  
-  
-  
+  echo '<h1>Ведение справочника городов</h1>';  
   
   #Формирование списка городов
-  #Выгрузка списка городов
-  echo '<form method="POST">
-  Город <input name="town" type="text">
-  <input name="town_change" type="submit" value="Изменить название города">
-  <input name="town_delete" type="submit" value="Удалить город">
-  </form>';
+  $query_towns_list=$dbh->prepare("SELECT Town.ID, Town.Name FROM Town");
+  $query_towns_list->execute();
+  $Towns_list=$query_towns_list->fetchAll();
 
+  #Выгрузка списка городов
+  foreach($Towns_list as list($list_Town_ID, $list_Town_Name))
+  {
+    echo '<form method="POST">
+    Город <input name="town_name" type="text" value="'.$list_Town_Name.'">
+    <input name="town_id" type="hidden" value="'.$list_Town_ID.'">
+    <input name="town_change" type="submit" value="Изменить название города">
+    <input name="town_delete" type="submit" value="Удалить город">
+    </form>';
+  }
+  echo '<form method="POST">
+  Город <input name="town_name" type="text">
+  <input name="town_create" type="submit" value="Добавить город">
+  </form>';
+  echo '<h1>Ведение справочника сезонов</h1>';
+
+  #Формирование списка сезонов
+
+  $query_seazons_list=$dbh->prepare("SELECT Seazon.ID, Seazon.Name, Seazon.Town_ID  FROM Seazon");
+  $query_seazons_list->execute();
+  $Seazons_list=$query_seazons_list->fetchAll();
+
+  #Выгрузка списка сезонов
+  foreach($Seazons_list as list($list_Seazon_ID,$list_Seazon_Name,$list_Seazon_Town_ID))
+  {
+    echo '<form method="POST">
+    Сезон <input name="seazon_name" type="text" value="'.$list_Seazon_Name.'">
+    <select name="seazon_town">';
+    foreach($Towns_list as list($list_Town_ID, $list_Town_Name))
+    {
+      echo '<option value="'.$list_Town_ID.'" ';
+      if ($list_Town_ID==$list_Seazon_Town_ID)
+      {
+        echo 'selected';
+      }
+      echo '>'.$list_Town_Name.'</option>';
+    }
+    echo '</select>
+    <input name="seazon_id" type="hidden" value="'.$list_Seazon_ID.'">
+    <input name="seazon_change" type="submit" value="Изменить сезон">
+    <input name="seazon_delete" type="submit" value="Удалить сезон">
+    </form>';
+  }
 
 }
+else
+{
+  #приветствие для пользователя
+  echo'<html>
+  <body>
+  Привет, '.$_SESSION['user'].', ты на секретной странице!!! :)';
+}  
 
+#обработка нажатий кнопок пользователя и администратора
+
+#смена имени пользователя и администратора
+?>
+<h1>Изменение личных данных</h1>
+<form method="POST">
+Имя <input name="new_user_name" type="text" value="<?php echo $_SESSION['user']; ?>">
+<input name="submit_name" type="submit" value="Изменить">
+<input type="hidden" name="scroll" value="">
+</form>
+
+<?
+#смена пароля пользователя и администратора
 ?>
 
+<form method="POST">
+Пароль <input name="new_user_pass1" type="text">
+Пароль еще раз <input name="new_user_pass2" type="text">
+<input name="submit_pass" type="submit" value="Изменить пароль">
+<input type="hidden" name="scroll" value="">
+</form>
 
-
+<script>
+$(window).on("scroll", function(){
+	$('input[name="scroll"]').val($(window).scrollTop());
+});
+ 
+<?php if (!empty($_REQUEST['scroll'])):
+echo'$(document).ready(function(){
+	window.scrollTo(0,'.intval($_REQUEST['scroll']).')});';  
+endif; ?>
+</script>
 
 </body>
 </html>
