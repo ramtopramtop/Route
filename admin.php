@@ -10,6 +10,8 @@ if(!isset($_SESSION['hash'])){
     exit;
 }
 
+
+
 # Соединямся с БД PHP_PDO
 
 try {
@@ -170,7 +172,8 @@ if($User_rights['Access_Rights']==2)
       echo "Ошибка: " . $e->getMessage();
     }
   }
-
+  
+  
   #приветствие для администратора
 
   echo'<html>
@@ -193,11 +196,12 @@ if($User_rights['Access_Rights']==2)
 
   foreach($Users_list as list($list_User_ID, $list_User_Name, $list_User_Login, $list_User_Access_Rights))
   {
-    echo '<form method="POST">
+    echo '<form id="User'.$list_User_ID.'" method="POST" onsubmit="return add_scroll(User'.$list_User_ID.')">
     Пользователь: '.$list_User_Name.', логин: '.$list_User_Login.', права: '.$list_User_Access_Rights.'
     <input name="user_rights_change_ID" type="hidden" value="'.$list_User_ID.'">
     <input name="user_rights_change_current" type="hidden" value="'.$list_User_Access_Rights.'">
     <input name="user_rights_change" type="submit" value="Изменить права">
+    <input type="hidden" name="scroll" value="0">
     </form>';
 
   }
@@ -212,16 +216,18 @@ if($User_rights['Access_Rights']==2)
   #Выгрузка списка городов
   foreach($Towns_list as list($list_Town_ID, $list_Town_Name))
   {
-    echo '<form method="POST">
+    echo '<form id="Town'.$list_Town_ID.'" method="POST" onsubmit="return add_scroll(Town'.$list_Town_ID.')">
     Город <input name="town_name" type="text" value="'.$list_Town_Name.'">
     <input name="town_id" type="hidden" value="'.$list_Town_ID.'">
     <input name="town_change" type="submit" value="Изменить название города">
     <input name="town_delete" type="submit" value="Удалить город">
+    <input type="hidden" name="scroll" value="0">
     </form>';
   }
-  echo '<form method="POST">
+  echo '<form id="Town0" method="POST" onsubmit="return add_scroll(Town0)">
   Город <input name="town_name" type="text">
   <input name="town_create" type="submit" value="Добавить город">
+  <input type="hidden" name="scroll" value="0">
   </form>';
   echo '<h1>Ведение справочника сезонов</h1>';
 
@@ -234,7 +240,7 @@ if($User_rights['Access_Rights']==2)
   #Выгрузка списка сезонов
   foreach($Seazons_list as list($list_Seazon_ID,$list_Seazon_Name,$list_Seazon_Town_ID))
   {
-    echo '<form method="POST">
+    echo '<form id="Seazon'.$list_Seazon_ID.'" method="POST" onsubmit="return add_scroll(Town'.$list_Seazon_ID.')">
     Сезон <input name="seazon_name" type="text" value="'.$list_Seazon_Name.'">
     <select name="seazon_town">';
     foreach($Towns_list as list($list_Town_ID, $list_Town_Name))
@@ -250,6 +256,7 @@ if($User_rights['Access_Rights']==2)
     <input name="seazon_id" type="hidden" value="'.$list_Seazon_ID.'">
     <input name="seazon_change" type="submit" value="Изменить сезон">
     <input name="seazon_delete" type="submit" value="Удалить сезон">
+    <input type="hidden" name="scroll" value="0">
     </form>';
   }
 
@@ -267,33 +274,65 @@ else
 #смена имени пользователя и администратора
 ?>
 <h1>Изменение личных данных</h1>
-<form method="POST">
+<form id="Name_change" method="POST" onsubmit="return add_scroll(Name_change)">
 Имя <input name="new_user_name" type="text" value="<?php echo $_SESSION['user']; ?>">
 <input name="submit_name" type="submit" value="Изменить">
-<input type="hidden" name="scroll" value="">
+<input type="hidden" name="scroll" value="0">
 </form>
 
 <?
 #смена пароля пользователя и администратора
 ?>
 
-<form method="POST">
+<form id="Pass_change" method="POST" onsubmit="return add_scroll(Pass_change)">
 Пароль <input name="new_user_pass1" type="text">
 Пароль еще раз <input name="new_user_pass2" type="text">
 <input name="submit_pass" type="submit" value="Изменить пароль">
-<input type="hidden" name="scroll" value="">
+<input type="hidden" name="scroll" value="0">
 </form>
 
-<script>
-$(window).on("scroll", function(){
-	$('input[name="scroll"]').val($(window).scrollTop());
-});
- 
-<?php if (!empty($_REQUEST['scroll'])):
-echo'$(document).ready(function(){
-	window.scrollTo(0,'.intval($_REQUEST['scroll']).')});';  
-endif; ?>
-</script>
 
+  
+  <script>
+  let cords = ['scrollX','scrollY']; 
+  // сохраняем позицию скролла в localStorage
+  window.addEventListener('unload', e => cords.forEach(cord => localStorage[cord] = window[cord])); 
+  // вешаем событие на загрузку (ресурсов) страницы
+  window.addEventListener('load', e => 
+  {
+    // если в localStorage имеются данные
+    if (localStorage[cords[0]])
+    {
+      // скроллим к сохраненным координатам
+      window.scroll(...cords.map(cord => localStorage[cord]));
+      // удаляем данные с localStorage
+      cords.forEach(cord => localStorage.removeItem(cord));
+    }
+  }); 
+
+
+  <?
+  #генерация скрипта положения на странице
+ 
+  #echo 'Координаты:'.$_POST['scroll'];
+  #if ($_POST['scroll'])
+  #{
+ #   echo 'window.scrollTo(0,'.$_POST['scroll'].');';
+ # }
+ # else
+#  {
+ #   echo 'window.scrollTo(0,0);';
+ # }
+
+  #функция сохранения положения на странице
+  
+  ?>
+  //function add_scroll(Form_name)
+  //{
+  //  Form_name.scroll.value = window.pageYOffset;
+    //
+  //}
+  </script>  
+  
 </body>
 </html>
