@@ -294,44 +294,28 @@ else
 
   
   <script>
-  let cords = ['scrollX','scrollY']; 
-  // сохраняем позицию скролла в localStorage
-  window.addEventListener('unload', e => cords.forEach(cord => localStorage[cord] = window[cord])); 
-  // вешаем событие на загрузку (ресурсов) страницы
-  window.addEventListener('load', e => 
-  {
-    // если в localStorage имеются данные
-    if (localStorage[cords[0]])
-    {
-      // скроллим к сохраненным координатам
-      window.scroll(...cords.map(cord => localStorage[cord]));
-      // удаляем данные с localStorage
-      cords.forEach(cord => localStorage.removeItem(cord));
-    }
-  }); 
-
-
+  
   <?
   #генерация скрипта положения на странице
  
-  #echo 'Координаты:'.$_POST['scroll'];
-  #if ($_POST['scroll'])
-  #{
- #   echo 'window.scrollTo(0,'.$_POST['scroll'].');';
- # }
- # else
-#  {
- #   echo 'window.scrollTo(0,0);';
- # }
+  echo 'Координаты:'.$_POST['scroll'];
+  if ($_POST['scroll'])
+  {
+    echo 'window.scrollTo(0,'.$_POST['scroll'].');';
+  }
+  else
+  {
+    echo 'window.scrollTo(0,0);';
+  }
 
   #функция сохранения положения на странице
   
   ?>
-  //function add_scroll(Form_name)
-  //{
-  //  Form_name.scroll.value = window.pageYOffset;
-    //
-  //}
+  function add_scroll(Form_name)
+  {
+    Form_name.scroll.value = window.pageYOffset;
+    
+  }
   </script>  
   
 </body>
