@@ -274,26 +274,21 @@ else
 #смена имени пользователя и администратора
 ?>
 <h1>Изменение личных данных</h1>
-<form id="Name_change" method="POST" onsubmit="return add_scroll(Name_change)">
+<form method="POST">
 Имя <input name="new_user_name" type="text" value="<?php echo $_SESSION['user']; ?>">
 <input name="submit_name" type="submit" value="Изменить">
-<input type="hidden" name="scroll" value="0">
 </form>
 
 <?
 #смена пароля пользователя и администратора
 ?>
 
-<form id="Pass_change" method="POST" onsubmit="return add_scroll(Pass_change)">
+<form  method="POST">
 Пароль <input name="new_user_pass1" type="text">
 Пароль еще раз <input name="new_user_pass2" type="text">
 <input name="submit_pass" type="submit" value="Изменить пароль">
-<input type="hidden" name="scroll" value="0">
 </form>
-
-
-  
-  <script>
+<script>
   let cords = ['scrollX','scrollY']; 
   // сохраняем позицию скролла в localStorage
   window.addEventListener('unload', e => cords.forEach(cord => localStorage[cord] = window[cord])); 
@@ -309,30 +304,6 @@ else
       cords.forEach(cord => localStorage.removeItem(cord));
     }
   }); 
-
-
-  <?
-  #генерация скрипта положения на странице
- 
-  #echo 'Координаты:'.$_POST['scroll'];
-  #if ($_POST['scroll'])
-  #{
- #   echo 'window.scrollTo(0,'.$_POST['scroll'].');';
- # }
- # else
-#  {
- #   echo 'window.scrollTo(0,0);';
- # }
-
-  #функция сохранения положения на странице
-  
-  ?>
-  //function add_scroll(Form_name)
-  //{
-  //  Form_name.scroll.value = window.pageYOffset;
-    //
-  //}
-  </script>  
-  
+</script>  
 </body>
 </html>
