@@ -45,6 +45,7 @@ if(isset($_POST['submit_name']))
 
       #меняем имя в текущей сессии
       $_SESSION['user']=$_POST['new_user_name'];
+      header("Location: admin.php");
 }
 
 #обработка изменения пароля
@@ -73,6 +74,7 @@ if(isset($_POST['submit_pass']))
   {
     echo 'Пароли не совпадают';
   }
+  header("Location: admin.php");
 }
 
 #запрос прав для получения данных администратора
@@ -115,6 +117,7 @@ if($User_rights['Access_Rights']==2)
     $dbh->rollBack();
     echo "Ошибка: " . $e->getMessage();
     }
+    header("Location: admin.php");
   }
 
   #обработка изменения города
@@ -134,6 +137,7 @@ if($User_rights['Access_Rights']==2)
       $dbh->rollBack();
       echo "Ошибка: " . $e->getMessage();
     }
+    header("Location: admin.php");
   }
 
   #обработка удаления города
@@ -153,6 +157,7 @@ if($User_rights['Access_Rights']==2)
       $dbh->rollBack();
       echo "Ошибка: " . $e->getMessage();
     }
+    header("Location: admin.php");
   }
 
   #обработка добавления города
@@ -172,8 +177,72 @@ if($User_rights['Access_Rights']==2)
       $dbh->rollBack();
       echo "Ошибка: " . $e->getMessage();
     }
+    header("Location: admin.php");
   }
+
+  #обработка изменения маршрута
+
+  if(isset($_POST['route_change']))
+  {
+    try
+    {   
+      $dbh->beginTransaction();
+      $registration=$dbh->prepare("UPDATE Route SET Route.Name=:PDO_RouteName,Route.Town_ID=:PDO_RouteTownID WHERE Route.ID=:PDO_RouteID");
+      $registration->bindparam(':PDO_RouteID',$_POST['route_id']);
+      $registration->bindparam(':PDO_RouteName',$_POST['route_name']);
+      $registration->bindparam(':PDO_RouteTownID',$_POST['route_town']);
+      $registration->execute();
+      $dbh->commit();
+    }
+    catch (Exception $e)
+    {
+      $dbh->rollBack();
+      echo "Ошибка: " . $e->getMessage();
+    }
+    header("Location: admin.php");
+  }
+
+  #обработка удаления маршрута
   
+  if(isset($_POST['route_delete']))
+  {
+    try
+    {   
+      $dbh->beginTransaction();
+      $registration=$dbh->prepare("DELETE FROM Route WHERE Route.ID=:PDO_RouteID");
+      $registration->bindparam(':PDO_RouteID',$_POST['route_id']);
+      $registration->execute();
+      $dbh->commit();
+    }
+    catch (Exception $e)
+    {
+      $dbh->rollBack();
+      echo "Ошибка: " . $e->getMessage();
+    }
+    header("Location: admin.php");
+  }
+
+  #обработка добавления маршрута
+  if(isset($_POST['route_create']))
+  {
+    try
+    {   
+      $dbh->beginTransaction();
+      $registration=$dbh->prepare("INSERT INTO Route SET Route.Name=:PDO_RouteName, Route.Town_ID=:PDO_RouteTownID");
+      $registration->bindparam(':PDO_RouteName',$_POST['route_name']);
+      $registration->bindparam(':PDO_RouteTownID',$_POST['route_town']);
+      $registration->execute();
+      $dbh->commit();
+    }
+    catch (Exception $e)
+    {
+      $dbh->rollBack();
+      echo "Ошибка: " . $e->getMessage();
+    }
+    header("Location: admin.php");
+  }
+
+
   #обработка изменения сезона
 
   if(isset($_POST['seazon_change']))
@@ -193,6 +262,7 @@ if($User_rights['Access_Rights']==2)
       $dbh->rollBack();
       echo "Ошибка: " . $e->getMessage();
     }
+    header("Location: admin.php");
   }
 
   #обработка удаления сезона
@@ -212,6 +282,7 @@ if($User_rights['Access_Rights']==2)
       $dbh->rollBack();
       echo "Ошибка: " . $e->getMessage();
     }
+    header("Location: admin.php");
   }
 
   #обработка добавления сезона
@@ -231,6 +302,7 @@ if($User_rights['Access_Rights']==2)
       $dbh->rollBack();
       echo "Ошибка: " . $e->getMessage();
     }
+    header("Location: admin.php");
   }
 
   #обработка удаления дня из списка дней сезона
@@ -250,6 +322,7 @@ if($User_rights['Access_Rights']==2)
       $dbh->rollBack();
       echo "Ошибка: " . $e->getMessage();
     }
+    header("Location: admin.php");
   }
 
   #обработка добавления даты в маршрут
@@ -270,9 +343,138 @@ if($User_rights['Access_Rights']==2)
       $dbh->rollBack();
       echo "Ошибка: " . $e->getMessage();
     }
+    header("Location: admin.php");
   }
 
+  #обработка изменения навигационной точки
+
+  if(isset($_POST['navpoint_change']))
+  {
+    try
+    {   
+      $dbh->beginTransaction();
+      $registration=$dbh->prepare("UPDATE Navpoint SET Navpoint.Tag=:PDO_NavpointTag, Navpoint.X=:PDO_NavpointX, Navpoint.Y=:PDO_NavpointY WHERE Navpoint.ID=:PDO_NavpointID");
+      $registration->bindparam(':PDO_NavpointID',$_POST['navpoint_id']);
+      $registration->bindparam(':PDO_NavpointTag',$_POST['navpoint_tag']);
+      $registration->bindparam(':PDO_NavpointX',$_POST['navpoint_x']);
+      $registration->bindparam(':PDO_NavpointY',$_POST['navpoint_y']);
+      $registration->execute();
+      $dbh->commit();
+    }
+    catch (Exception $e)
+    {
+      $dbh->rollBack();
+      echo "Ошибка: " . $e->getMessage();
+    }
+    header("Location: admin.php");
+  }
+ 
+  #обработка удаления навигационной точки
+   
+  if(isset($_POST['navpoint_delete']))
+  {
+    try
+    {   
+      $dbh->beginTransaction();
+      $registration=$dbh->prepare("DELETE FROM Navpoint WHERE Navpoint.ID=:PDO_NavpointID");
+      $registration->bindparam(':PDO_NavpointID',$_POST['navpoint_id']);
+      $registration->execute();
+      $dbh->commit();
+    }
+    catch (Exception $e)
+    {
+      $dbh->rollBack();
+      echo "Ошибка: " . $e->getMessage();
+    }
+    header("Location: admin.php");
+  }
+ 
+  #обработка добавления навигационной точки
+ 
+  if(isset($_POST['navpoint_create']))
+  {
+    try
+    {   
+      $dbh->beginTransaction();
+      $registration=$dbh->prepare("INSERT INTO Navpoint SET Navpoint.Tag=:PDO_NavpointTag, Navpoint.X=:PDO_NavpointX,Navpoint.Y=:PDO_NavpointY");
+      $registration->bindparam(':PDO_NavpointTag',$_POST['navpoint_tag']);
+      $registration->bindparam(':PDO_NavpointX',$_POST['navpoint_x']);
+      $registration->bindparam(':PDO_NavpointY',$_POST['navpoint_y']);
+      $registration->execute();
+      $dbh->commit();
+    }
+    catch (Exception $e)
+    {
+      $dbh->rollBack();
+      echo "Ошибка: " . $e->getMessage();
+    }
+    header("Location: admin.php");
+  }
+
+  #обработка изменения точки графа маршрута
+
+  if(isset($_POST['route_graph_change']))
+  {
+    try
+    {   
+      $dbh->beginTransaction();
+      $registration=$dbh->prepare("UPDATE Route_graph SET Route_graph.Visit_order=:PDO_RouteGraphVisitOrder, Route_graph.Route_ID=:PDO_RouteGraphRouteID, Route_graph.Navpoint_ID=:PDO_RouteGraphNavpointID WHERE Route_graph.ID=:PDO_RouteGraphID");
+      $registration->bindparam(':PDO_RouteGraphID',$_POST['route_graph_id']);
+      $registration->bindparam(':PDO_RouteGraphVisitOrder',$_POST['route_graph_visit_order']);
+      $registration->bindparam(':PDO_RouteGraphRouteID',$_POST['route_graph_route']);
+      $registration->bindparam(':PDO_RouteGraphNavpointID',$_POST['route_graph_navpoint']);
+      $registration->execute();
+      $dbh->commit();
+    }
+    catch (Exception $e)
+    {
+      $dbh->rollBack();
+      echo "Ошибка: " . $e->getMessage();
+    }
+    header("Location: admin.php");
+  }
+
+  #обработка удаления точки из графа маршрута
   
+  if(isset($_POST['route_graph_delete']))
+  {
+    try
+    {   
+      $dbh->beginTransaction();
+      $registration=$dbh->prepare("DELETE FROM Route_graph WHERE Route_graph.ID=:PDO_RouteGraphID");
+      $registration->bindparam(':PDO_RouteGraphID',$_POST['route_graph_id']);
+      $registration->execute();
+      $dbh->commit();
+    }
+    catch (Exception $e)
+    {
+      $dbh->rollBack();
+      echo "Ошибка: " . $e->getMessage();
+    }
+    header("Location: admin.php");
+  }
+
+  #обработка добавления точки в граф маршрута
+  if(isset($_POST['route_graph_create']))
+  {
+    try
+    {   
+      $dbh->beginTransaction();
+      $registration=$dbh->prepare("INSERT INTO Route_graph SET Route_graph.Visit_order=:PDO_RouteGraphVisitOrder, Route_graph.Route_ID=:PDO_RouteGraphRouteID, Route_graph.Navpoint_ID=:PDO_RouteGraphNavpointID");
+      $registration->bindparam(':PDO_RouteGraphVisitOrder',$_POST['route_graph_visit_order']);
+      $registration->bindparam(':PDO_RouteGraphRouteID',$_POST['route_graph_route']);
+      $registration->bindparam(':PDO_RouteGraphNavpointID',$_POST['route_graph_navpoint']);
+      $registration->execute();
+      $dbh->commit();
+    }
+    catch (Exception $e)
+    {
+      $dbh->rollBack();
+      echo "Ошибка: " . $e->getMessage();
+    }
+    header("Location: admin.php");
+  }  
+
   #приветствие для администратора
 
   echo'<html>
@@ -353,9 +555,9 @@ if($User_rights['Access_Rights']==2)
       echo '>'.$list_Town_Name.'</option>';
     }
     echo '</select>
-    <input name="seazon_id" type="hidden" value="'.$list_Route_ID.'">
-    <input name="seazon_change" type="submit" value="Изменить маршрут">
-    <input name="seazon_delete" type="submit" value="Удалить маршрут">
+    <input name="route_id" type="hidden" value="'.$list_Route_ID.'">
+    <input name="route_change" type="submit" value="Изменить маршрут">
+    <input name="route_delete" type="submit" value="Удалить маршрут">
     </form>';
   }
 
@@ -427,7 +629,7 @@ if($User_rights['Access_Rights']==2)
   foreach($Days_list as list($list_Seazon_day_ID,$list_Seazon_day_Day,$list_Seazon_day_Seazon_ID))
   {
     echo '<form method="POST">
-    Дата <input name="seazon_day_day" type="date" value="'.$list_Route_day_Day.'">
+    Дата <input name="seazon_day_day" type="date" value="'.$list_Seazon_day_Day.'">
     <select name="seazon_day_seazon">';
     foreach($Seazons_list as list($list_Seazon_ID,$list_Seazon_Name,$list_Seazon_Route_ID))
     {
@@ -457,6 +659,100 @@ if($User_rights['Access_Rights']==2)
   <input name="seazon_day_create" type="submit" value="Добавить день в сезон">
   </form>';
 
+  echo '<h1>Ведение справочника навигационных точек</h1>';  
+  
+  #Формирование списка навигационных точек
+
+  $query_navpoints_list=$dbh->prepare("SELECT Navpoint.ID, Navpoint.X, Navpoint.Y, Navpoint.Tag FROM Navpoint");
+  $query_navpoints_list->execute();
+  $Navpoints_list=$query_navpoints_list->fetchAll();
+
+  #Выгрузка списка навигационных точек
+
+  foreach($Navpoints_list as list($list_Navpoint_ID, $list_Navpoint_X, $list_Navpoint_Y, $list_Navpoint_Tag))
+  {
+    echo '<form method="POST">
+    Нав. точка <input name="navpoint_tag" type="text" value="'.$list_Navpoint_Tag.'">
+    Коорд широта <input name="navpoint_x" type="text" value="'.$list_Navpoint_X.'">
+    Коорд долгота <input name="navpoint_y" type="text" value="'.$list_Navpoint_Y.'">
+    <input name="navpoint_id" type="hidden" value="'.$list_Navpoint_ID.'">
+    <input name="navpoint_change" type="submit" value="Изменить нав. точку">
+    <input name="navpoint_delete" type="submit" value="Удалить нав. точку">
+    </form>';
+  }
+
+  #форма добавления навигационной точки
+
+  echo '<form method="POST">
+  Нав. точка <input name="navpoint_tag" type="text">
+  Коорд широта <input name="navpoint_x" type="text">
+  Коорд долгота <input name="navpoint_y" type="text">
+  <input name="navpoint_create" type="submit" value="Добавить нав. точку">
+  </form>';
+
+  #Формирование списка графа маршрута
+
+  echo '<h1>Ведение справочника графов маршрутов</h1>';
+  $query_route_graph_list=$dbh->prepare("SELECT Route_graph.ID, Route_graph.Visit_order, Route_graph.Route_ID, Route_graph.Navpoint_ID  FROM Route_graph");
+  $query_route_graph_list->execute();
+  $Route_graph_list=$query_route_graph_list->fetchAll();
+
+  #Выгрузка списка графа маршрута
+
+  foreach($Route_graph_list as list($list_Route_graph_ID,$list_Route_graph_Visit_order,$list_Route_graph_Route_ID,$list_Route_graph_Navpoint_ID))
+  {
+    echo '<form method="POST">
+    Маршрут 
+    <select name="route_graph_route">';
+    foreach($Routes_list as list($list_Route_ID,$list_Route_Name,$list_Route_Town_ID))
+    {
+      echo '<option value="'.$list_Route_ID.'" ';
+      if ($list_Route_ID==$list_Route_graph_Route_ID)
+      {
+        echo 'selected';
+      }
+      echo '>'.$list_Route_Name.'</option>';
+    }
+    echo '</select>
+    Нав. точка 
+    <select name="route_graph_navpoint">';
+    foreach($Navpoints_list as list($list_Navpoint_ID, $list_Navpoint_X, $list_Navpoint_Y, $list_Navpoint_Tag))
+    {
+      echo '<option value="'.$list_Navpoint_ID.'" ';
+      if ($list_Navpoint_ID==$list_Route_graph_Navpoint_ID)
+      {
+        echo 'selected';
+      }
+      echo '>'.$list_Navpoint_Tag.'</option>';
+    }
+    echo '</select>
+    Порядок прохождения <input name="route_graph_visit_order" type="text" value="'.$list_Route_graph_Visit_order.'">
+    <input name="route_graph_id" type="hidden" value="'.$list_Route_graph_ID.'">
+    <input name="route_graph_change" type="submit" value="Изменить порядок прохождения">
+    <input name="route_graph_delete" type="submit" value="Удалить">
+    </form>';
+  }
+
+  #выгрузка формы добавления графа маршрута
+
+  echo '<form method="POST">
+  Маршрут
+  <select name="route_graph_route" required>';
+  foreach($Routes_list as list($list_Route_ID,$list_Route_Name,$list_Route_Town_ID))
+    {
+      echo '<option value="'.$list_Route_ID.'">'.$list_Route_Name.'</option>';
+    }
+  echo '</select>
+  Нав. точка
+  <select name="route_graph_navpoint" required>';
+  foreach($Navpoints_list as list($list_Navpoint_ID, $list_Navpoint_X, $list_Navpoint_Y, $list_Navpoint_Tag))
+    {
+      echo '<option value="'.$list_Navpoint_ID.'">'.$list_Navpoint_Tag.'</option>';
+    }
+  echo '</select>
+  Порядок прохождения <input name="route_graph_visit_order" type="text">
+  <input name="route_graph_create" type="submit" value="Добавить точку в граф">
+  </form>';
 }
 else
 {
