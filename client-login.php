@@ -8,6 +8,28 @@ require __DIR__ . '/vendor/autoload.php';
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
+//получение данных из джсон потока
+
+$postData = file_get_contents('php://input');
+
+//Провверка на пустые данные
+
+if ($postData=="")
+{
+    http_response_code(204);
+    exit();
+
+}
+$json_data = json_decode($postData, true);
+
+//Проверка на корректность json
+
+if (is_null($json_data))
+{
+    http_response_code(400);
+    exit();
+}
+
 # Соединямся с БД PHP_PDO
 
 try {
@@ -19,17 +41,16 @@ try {
     die("Не удалось подключиться: " . $e->getMessage());
   }
 
-//получение данных из джсон потока
-
-$postData = file_get_contents('php://input');
-$json_data = json_decode($postData, true);
-
-
 //обработка джсона
 
 //проверка регистрации пользователя
 
-if ($json_data["login"] and $json_data["password"])
+if (!isset($json_data["login"]) or !isset($json_data["password"]))
+{
+    http_response_code(206);
+    exit();
+}
+else
 {
     
     $password=md5(md5($json_data["password"]));
@@ -61,8 +82,12 @@ if ($json_data["login"] and $json_data["password"])
         echo json_encode($json_output);
                            
     }
- 
-}
+    else
+    {
+        http_response_code(401);
+    }
+} 
+
 function token_payload($f_ID,$f_access_rights, $token_type)
 {
     global $privateKey;
