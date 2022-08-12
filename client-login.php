@@ -77,50 +77,114 @@ if (isset($json_data["login"]) and isset($json_data["password"]))
 else
 {
     //Проверка наличия токена
-    if (! preg_match('/Bearer\s(\S+)/', $_SERVER['HTTP_AUTHORIZATION'], $matches))
+    //проверка типа авторизации
+    if (!isset($_SERVER['HTTP_AUTHORIZATION']))
     {
-        header('HTTP/1.0 400 Bad Request');
-        echo 'Token not found in request';
+        http_response_code(400);
+        echo "нет ключей логина/пароля и нет токена";
         exit;
     }
     else
     {
-        $jwt = $matches[1];
-        if (! $jwt)
+        if (! preg_match('/Bearer\s(\S+)/', $_SERVER['HTTP_AUTHORIZATION'], $matches))
         {
-            // No token was able to be extracted from the authorization header
             header('HTTP/1.0 400 Bad Request');
-            echo 'No token was able to be extracted from the authorization header';
+            echo 'Token not found in request';
             exit;
         }
         else
         {
-            try
+            $jwt = $matches[1];
+             if (! $jwt)
             {
-                //расшифровка токена
-                $token = JWT::decode($jwt, new Key($publicKey, 'RS256'));
-                
-            }
-            catch(Exception $e)
-            {
-                http_response_code(400);
-                echo "некорректный токен";
-                echo $e->getMessage();
+                // No token was able to be extracted from the authorization header
+                header('HTTP/1.0 400 Bad Request');
+                echo 'No token was able to be extracted from the authorization header';
                 exit;
             }
-            var_dump($token);
-            //создание текущей даты
-            $now = new DateTimeImmutable('now', new DateTimeZone($token_timezone));
-            //обработка ключей токена
-            if ($token->token_type =='refresh' and $token->exp < $now->format('Y-m-d H:i:sP'))
+            else
             {
-                echo 'ghbdtn';
+                try
+                {
+                    //расшифровка токена
+                    $token = JWT::decode($jwt, new Key($publicKey, 'RS256'));
+                    
+                }
+                catch(Exception $e)
+                {
+                    http_response_code(400);
+                    echo "некорректный токен";
+                    echo $e->getMessage();
+                    exit;
+                }
+            
+                //создание текущей даты
+                $now = new DateTimeImmutable('now', new DateTimeZone($token_timezone));
+            
+                //обработка токенов
+                //определение типа токена
+                if ($token->token_type =='refresh')
+                {
+                    //проверка истечение срока токена
+                    if ($token->exp > $now->format('Y-m-d H:i:sP'))
+                    {
+                        //генерация токенов
+                        $Registered_user=array('ID'=>$token->user_id, 'Access_Rights'=>$token->access_level);      
+                        token_generation();
+                        exit;
+                    }
+                    else
+                    {
+                        header('Content-Type: application/json');
+                        echo '{"refresh_token" : "expired"}';
+                        exit;
+                    } 
+                }
+                        
+                if ($token->token_type =='access')
+                {
+                    //проверка истечение срока токена
+                
+                    if ($token->exp > $now->format('Y-m-d H:i:sP'))
+                    {
+                        //обработка ключей запроса с токеном доступа
+                        
+                        switch ($json_data["json_query"])
+                        {
+                            //запрос списка ближайших точек
+                            
+                            case 'list_nav_point':
+                                if (isset($json_data["position_x"])||isset($json_data["position_y"])||isset($json_data["radius"]))
+                                {
+                                    $query=$dbh->prepare("SELECT Navpoint.ID, Navpoint.X, Navpoint.Y, Navpoint.Tag FROM Navpoint");
+                                    //$query->bindparam(':PDO_Login',$json_data["login"]);
+                                    //$query->bindparam(':PDO_Password',$password);
+                                    $query->execute();
+                                    $query_result=$query->fetchall(PDO::FETCH_ASSOC);
+                                    echo json_encode($query_result);
+                                    
+                                }
+                                else
+                                {
+                                    http_response_code(400);
+                                    echo 'не хватает ключей для запроса список ближайших точек';
+                                }
+                            break;
+
+                        }
+                        exit;  
+                    }
+                    else
+                    {
+                        http_response_code(400);
+                        header('Content-Type: application/json');
+                        echo '{"access_token" : "expired"}';
+                        exit;
+                    }
+                }     
             }
         }
     }
-    http_response_code(400);
-    echo "нет ключей логина/пароля";
-    exit();
 }
 
 function token_generation()
@@ -171,7 +235,7 @@ function token_payload($token_type, $token_lifetime)
         'token_type'=>$token_type,
         'exp'=> $current_date->add($date_interval)->format('Y-m-d H:i:sP')
                 ];
-    var_dump($payload_access_token);
+    
     return JWT::encode($payload_access_token, $privateKey, 'RS256');
     
 }  
