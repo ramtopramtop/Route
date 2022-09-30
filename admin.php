@@ -353,7 +353,7 @@ if($User_rights['Access_Rights']==2)
     try
     {   
       $dbh->beginTransaction();
-      $registration=$dbh->prepare("UPDATE Navpoint SET Navpoint.Tag=:PDO_NavpointTag, Navpoint.X=:PDO_NavpointX, Navpoint.Y=:PDO_NavpointY WHERE Navpoint.ID=:PDO_NavpointID");
+      $registration=$dbh->prepare("UPDATE Navpoint SET Navpoint.Tag=:PDO_NavpointTag, Navpoint.Coordinates=PointFromText(concat('POINT(',:PDO_NavpointX,' ',:PDO_NavpointY,')')) WHERE Navpoint.ID=:PDO_NavpointID");
       $registration->bindparam(':PDO_NavpointID',$_POST['navpoint_id']);
       $registration->bindparam(':PDO_NavpointTag',$_POST['navpoint_tag']);
       $registration->bindparam(':PDO_NavpointX',$_POST['navpoint_x']);
@@ -396,7 +396,7 @@ if($User_rights['Access_Rights']==2)
     try
     {   
       $dbh->beginTransaction();
-      $registration=$dbh->prepare("INSERT INTO Navpoint SET Navpoint.Tag=:PDO_NavpointTag, Navpoint.X=:PDO_NavpointX,Navpoint.Y=:PDO_NavpointY");
+      $registration=$dbh->prepare("INSERT INTO Navpoint SET Navpoint.Tag=:PDO_NavpointTag, Navpoint.Coordinates=PointFromText(concat('POINT(',:PDO_NavpointX,' ',:PDO_NavpointY,')'))");
       $registration->bindparam(':PDO_NavpointTag',$_POST['navpoint_tag']);
       $registration->bindparam(':PDO_NavpointX',$_POST['navpoint_x']);
       $registration->bindparam(':PDO_NavpointY',$_POST['navpoint_y']);
@@ -663,7 +663,7 @@ if($User_rights['Access_Rights']==2)
   
   #Формирование списка навигационных точек
 
-  $query_navpoints_list=$dbh->prepare("SELECT Navpoint.ID, Navpoint.X, Navpoint.Y, Navpoint.Tag FROM Navpoint");
+  $query_navpoints_list=$dbh->prepare("SELECT Navpoint.ID, ST_X(Navpoint.Coordinates), ST_Y(Navpoint.Coordinates), Navpoint.Tag FROM Navpoint");
   $query_navpoints_list->execute();
   $Navpoints_list=$query_navpoints_list->fetchAll();
 

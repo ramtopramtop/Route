@@ -156,7 +156,7 @@ else
                             case 'list_nav_point':
                                 if (isset($json_data["position_x"])||isset($json_data["position_y"])||isset($json_data["radius"]))
                                 {
-                                    $query=$dbh->prepare("SELECT Navpoint.ID, Navpoint.X, Navpoint.Y, Navpoint.Tag FROM Navpoint");
+                                    $query=$dbh->prepare("SELECT Navpoint.ID, ST_X(Navpoint.Coordinates) as X, ST_Y(Navpoint.Coordinates) as Y, Navpoint.Tag FROM Navpoint");
                                     //$query->bindparam(':PDO_Login',$json_data["login"]);
                                     //$query->bindparam(':PDO_Password',$password);
                                     $query->execute();
