@@ -156,9 +156,10 @@ else
                             case 'list_nav_point':
                                 if (isset($json_data["position_x"])||isset($json_data["position_y"])||isset($json_data["radius"]))
                                 {
-                                    $query=$dbh->prepare("SELECT Navpoint.ID, ST_X(Navpoint.Coordinates) as X, ST_Y(Navpoint.Coordinates) as Y, Navpoint.Tag FROM Navpoint");
-                                    //$query->bindparam(':PDO_Login',$json_data["login"]);
-                                    //$query->bindparam(':PDO_Password',$password);
+                                    $query=$dbh->prepare("SELECT Navpoint.ID, ST_X(Navpoint.Coordinates) as X, ST_Y(Navpoint.Coordinates) as Y, Navpoint.Tag FROM Navpoint WHERE ST_Distance_Sphere(Navpoint.Coordinates, PointFromText('POINT(61.73 34.319)'))<=1000");
+                                    $query->bindparam(':PDO_NavpointX',$json_data["position_x"]);
+                                    $query->bindparam(':PDO_NavpointY',$json_data["position_y"]);
+                                    $query->bindparam(':PDO_Radius',$json_data["radius"]);
                                     $query->execute();
                                     $query_result=$query->fetchall(PDO::FETCH_ASSOC);
                                     echo json_encode($query_result);
