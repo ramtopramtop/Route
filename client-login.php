@@ -19,7 +19,7 @@ $postData = file_get_contents('php://input');
 
 if ($postData=="")
 {
-    http_response_code(204);
+    error_handler(400, 40003, 'Нет входящих данных');
     exit();
 
 }
@@ -29,8 +29,14 @@ $json_data = json_decode($postData, true);
 
 if (is_null($json_data))
 {
-    http_response_code(400);
-    echo "json некорректный";
+    error_handler(400, 40001, 'Некорректный json');
+    exit();
+}
+
+//Проверка ключа вида запроса
+if (!isset($json_data["json_query"]))
+{
+    error_handler(400, 40002, 'Нет распознанных ключей запросов json');
     exit();
 }
 
@@ -47,146 +53,67 @@ try {
 
 //обработка джсона
 
-//проверка регистрации пользователя
-//проверка наличия полей логина и пароля
-
-if (isset($json_data["login"]) and isset($json_data["password"]))
+//обработка ключей запроса
+                        
+switch ($json_data["json_query"])
 {
-    //поиск пользователя
-    $password=md5(md5($json_data["password"]));
-    $query=$dbh->prepare("SELECT User.ID, User.Access_Rights FROM User WHERE User.Login=:PDO_Login and User.Password=:PDO_Password");
-    $query->bindparam(':PDO_Login',$json_data["login"]);
-    $query->bindparam(':PDO_Password',$password);
-    $query->execute();
-    $Registered_user=$query->fetch(PDO::FETCH_ASSOC);
-    
-    //если пользователь нашелся
-
-    if ($Registered_user)
-    {
-        //генерация токенов      
-        token_generation();                           
-    }
-    else
-    {
-        http_response_code(401);
-        echo "неправильный логин/пароль";
-    }
-    
-}
-else
-{
-    //Проверка наличия токена
-    //проверка типа авторизации
-    if (!isset($_SERVER['HTTP_AUTHORIZATION']))
-    {
-        http_response_code(400);
-        echo "нет ключей логина/пароля и нет токена";
-        exit;
-    }
-    else
-    {
-        if (! preg_match('/Bearer\s(\S+)/', $_SERVER['HTTP_AUTHORIZATION'], $matches))
+    //запрос списка ближайших точек
+    case 'list_nav_point':
+        //проверка полей 
+        if (isset($json_data["position_x"])||isset($json_data["position_y"])||isset($json_data["radius"]))
         {
-            header('HTTP/1.0 400 Bad Request');
-            echo 'Token not found in request';
-            exit;
+            //проверка токена
+            check_token('access',1);
+            //выполнение запроса
+            $query=$dbh->prepare("SELECT Navpoint.ID, ST_X(Navpoint.Coordinates) as X, ST_Y(Navpoint.Coordinates) as Y, Navpoint.Tag
+             FROM Navpoint WHERE ST_Distance_Sphere(Navpoint.Coordinates, PointFromText(concat('POINT(',:PDO_NavpointX,' ',:PDO_NavpointY,')')))<=:PDO_Radius");
+            $query->bindparam(':PDO_NavpointX',$json_data["position_x"]);
+            $query->bindparam(':PDO_NavpointY',$json_data["position_y"]);
+            $query->bindparam(':PDO_Radius',$json_data["radius"]);
+            $query->execute();
+            $query_result=$query->fetchall(PDO::FETCH_ASSOC);
+            error_handler(200, 0, 'Нет ошибок',$query_result);                        
         }
         else
         {
-            $jwt = $matches[1];
-             if (! $jwt)
+            error_handler(400, 40002, 'Нет распознанных ключей запросов json');
+        }
+    break;
+
+    //авторизация пользователя
+    case 'autorization':
+        //проверка наличия полей логина и пароля
+        if (isset($json_data["login"]) and isset($json_data["password"]))
+        {
+            //поиск пользователя
+            $password=md5(md5($json_data["password"]));
+            $query=$dbh->prepare("SELECT User.ID, User.Access_Rights FROM User WHERE User.Login=:PDO_Login and User.Password=:PDO_Password");
+            $query->bindparam(':PDO_Login',$json_data["login"]);
+            $query->bindparam(':PDO_Password',$password);
+            $query->execute();
+            $Registered_user=$query->fetch(PDO::FETCH_ASSOC);
+            //если пользователь нашелся
+            if ($Registered_user)
             {
-                // No token was able to be extracted from the authorization header
-                header('HTTP/1.0 400 Bad Request');
-                echo 'No token was able to be extracted from the authorization header';
-                exit;
+                //генерация токенов      
+                token_generation();                           
             }
             else
             {
-                try
-                {
-                    //расшифровка токена
-                    $token = JWT::decode($jwt, new Key($publicKey, 'RS256'));
-                    
-                }
-                catch(Exception $e)
-                {
-                    http_response_code(400);
-                    echo "некорректный токен";
-                    echo $e->getMessage();
-                    exit;
-                }
-            
-                //создание текущей даты
-                $now = new DateTimeImmutable('now', new DateTimeZone($token_timezone));
-            
-                //обработка токенов
-                //определение типа токена
-                if ($token->token_type =='refresh')
-                {
-                    //проверка истечение срока токена
-                    if ($token->exp > $now->format('Y-m-d H:i:sP'))
-                    {
-                        //генерация токенов
-                        $Registered_user=array('ID'=>$token->user_id, 'Access_Rights'=>$token->access_level);      
-                        token_generation();
-                        exit;
-                    }
-                    else
-                    {
-                        header('Content-Type: application/json');
-                        echo '{"refresh_token" : "expired"}';
-                        exit;
-                    } 
-                }
-                        
-                if ($token->token_type =='access')
-                {
-                    //проверка истечение срока токена
-                
-                    if ($token->exp > $now->format('Y-m-d H:i:sP'))
-                    {
-                        //обработка ключей запроса с токеном доступа
-                        
-                        switch ($json_data["json_query"])
-                        {
-                            //запрос списка ближайших точек
-                            
-                            case 'list_nav_point':
-                                if (isset($json_data["position_x"])||isset($json_data["position_y"])||isset($json_data["radius"]))
-                                {
-                                    $query=$dbh->prepare("SELECT Navpoint.ID, ST_X(Navpoint.Coordinates) as X, ST_Y(Navpoint.Coordinates) as Y, Navpoint.Tag FROM Navpoint WHERE ST_Distance_Sphere(Navpoint.Coordinates, PointFromText('POINT(61.73 34.319)'))<=1000");
-                                    $query->bindparam(':PDO_NavpointX',$json_data["position_x"]);
-                                    $query->bindparam(':PDO_NavpointY',$json_data["position_y"]);
-                                    $query->bindparam(':PDO_Radius',$json_data["radius"]);
-                                    $query->execute();
-                                    $query_result=$query->fetchall(PDO::FETCH_ASSOC);
-                                    echo json_encode($query_result);
-                                    
-                                }
-                                else
-                                {
-                                    http_response_code(400);
-                                    echo 'не хватает ключей для запроса список ближайших точек';
-                                }
-                            break;
-
-                        }
-                        exit;  
-                    }
-                    else
-                    {
-                        http_response_code(400);
-                        header('Content-Type: application/json');
-                        echo '{"access_token" : "expired"}';
-                        exit;
-                    }
-                }     
+                error_handler(401, 40105, 'Неправильный логин/пароль')
             }
         }
-    }
+        else
+        {
+            error_handler(400, 40002, 'Нет распознанных ключей запросов json');
+        }
+    
+
+    break;
+    default:
+        error_handler(400, 40002, 'Нет распознанных ключей запросов json');        
 }
+ 
 
 function token_generation()
 {
@@ -197,8 +124,9 @@ function token_generation()
                 
     $json_output = ['access_token'=> token_payload('access',$access_token_lifetime),
     'refresh_token'=>token_payload('refresh',$refresh_token_lifetime)];
-    header('Content-Type: application/json');
-    echo json_encode($json_output);
+    error_handler (200, 0, 'Нет ошибок', $json_output);
+    //header('Content-Type: application/json');
+    //echo json_encode($json_output);
 }
 
 function token_payload($token_type, $token_lifetime)
@@ -213,8 +141,7 @@ function token_payload($token_type, $token_lifetime)
     }
     catch(Exception $e)
     {
-        http_response_code(500);
-        echo "проблемы с получением времени, возможно некорректное указание временной зоны в настройках";
+        error_handler(500, 50001, 'проблемы с получением времени, возможно некорректное указание временной зоны в настройках');
         echo $e->getMessage();
     }
     //добавляем время истечения токена
@@ -224,8 +151,7 @@ function token_payload($token_type, $token_lifetime)
     }
     catch(Exception $e)
     {
-        http_response_code(500);
-        echo "проблемы с временем жизни токенов, возможно некорректное указание времени жизни токена в настройках";
+        error_handler(500, 50002, 'проблемы с временем жизни токенов, возможно некорректное указание времени жизни токена в настройках');
         echo $e->getMessage() . '<br />';
     }
    // $exp_date=$current_date->add($date_interval);
@@ -239,5 +165,100 @@ function token_payload($token_type, $token_lifetime)
     
     return JWT::encode($payload_access_token, $privateKey, 'RS256');
     
-}  
+}
+
+function error_handler($http_error_code, $error_code, $error, $data_responce='')
+{
+    http_response_code($http_error_code);
+    header('Content-Type: application/json');
+    if ($data_responce=="")
+        $data_responce = ["error_code"=>$error_code, "error"=>$error];
+    else
+        $data_responce += ["error_code"=>$error_code, "error"=>$error];
+    echo json_encode($data_responce);
+}
+
+function check_token($token_type_must_have, $access_rights)
+{
+    global $Registered_user;
+    global $publicKey;
+    global $token_timezone;
+    //проверка указания авторизации
+    if (!isset($_SERVER['HTTP_AUTHORIZATION']))
+    {
+        error_handler(400,40006,'Необходима авторизация');
+        exit;
+    }
+    else
+    {
+        //проверка авторизации через токен
+        if (! preg_match('/Bearer\s(\S+)/', $_SERVER['HTTP_AUTHORIZATION'], $matches))
+        {
+            error_handler(400,40005,'Неверный тип авторизации');
+            exit;
+        }
+        else
+        {
+            $jwt = $matches[1];
+
+            //Проверка непустого токена
+             if (! $jwt)
+            {
+                error_handler(400,40004,'Токен отсутствует');
+                exit;
+            }
+            else
+            {
+                try
+                {
+                    //расшифровка токена
+                    $token = JWT::decode($jwt, new Key($publicKey, 'RS256'));
+                    
+                }
+                catch(Exception $e)
+                {
+                    error_handler(401,40004,'Токен неверный');
+                    echo $e->getMessage();
+                    exit;
+                }
+            
+                //создание текущей даты
+                $now = new DateTimeImmutable('now', new DateTimeZone($token_timezone));
+            
+                //обработка токенов
+                //проверка истечения срока токена
+                if ($token->exp > $now->format('Y-m-d H:i:sP'))
+                {
+                    //определение типа токена
+                    if ($token->token_type == 'refresh' && $token_type_must_have == 'refresh')
+                    {
+                        //генерация токенов
+                        $Registered_user=['ID'=>$token->user_id, 'Access_Rights'=>$token->access_level];      
+                        token_generation();
+                        exit;
+                    }
+                    elseif ($token->token_type == 'access' && $token_type_must_have == 'access')
+                    {
+                        if ($token->access_level < $access_rights)
+                        {
+                            error_handler(403,40301,'Недостаточно прав');
+                            exit;
+                        }    
+                    }
+                    else
+                    {
+                        error_handler(401,40004,'Токен неверный');
+                        exit;
+                    }
+                }
+                else
+                {
+                    error_handler(401,40101,'Истек срок токена');
+                    exit;
+                }
+                     
+            }
+        }
+    }
+}
 ?>
