@@ -1,11 +1,13 @@
 <?php
-//подключаем настройки сервера
-include 'server_settings.php';
-//Поключаем данные авторизации БД
-include '../conn/dbase.php';
-//Подключаем ключ сервера
+//Подключение универсальных функций
+require 'functions.php';
+//Подключение настроек сервера
+require 'server_settings.php';
+//Поключение данных авторизации БД
+require '../conn/dbase.php';
+//Подключение ключа сервера
 include '../conn/key.php';
-//подключаем классы для работы с jwt
+//Подключение классов для работы с jwt
 require __DIR__ . '/vendor/autoload.php';
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
@@ -100,15 +102,60 @@ switch ($json_data["json_query"])
             }
             else
             {
-                error_handler(401, 40105, 'Неправильный логин/пароль')
+                error_handler(401, 40105, 'Неправильный логин/пароль');
             }
         }
         else
         {
             error_handler(400, 40002, 'Нет распознанных ключей запросов json');
         }
-    
+    break;
 
+    //регистарция пользователя
+    case 'registration':
+        //проверка наличия полей имени, логина и пароля
+        if (isset($json_data["login"]) and isset($json_data["password"]) and isset($json_data["name"]))
+        {
+            //поиск пользователя по логину
+            $query=$dbh->prepare("SELECT User.ID, User.Access_Rights FROM User WHERE User.Login=:PDO_Login");
+            $query->bindparam(':PDO_Login',$json_data["login"]);
+            $query->execute();
+            $Registered_user=$query->fetch(PDO::FETCH_ASSOC);
+            //если пользователь нашелся
+            if ($Registered_user)
+            {
+                //ошибка      
+                error_handler(406, 40601, 'Пользователь уже существует');                           
+            }
+            else
+            {
+                //занесение пользователя в базу
+                try
+                {
+                    $hased_password = password_generation($json_data["password"]);
+                    $dbh->beginTransaction();
+                    $registration=$dbh->prepare("INSERT INTO User SET User.Login=:PDO_Login, User.Password=:PDO_Password, User.Name=:PDO_Name");
+                    $registration->bindparam(':PDO_Login',$json_data["login"]);
+                    $registration->bindparam(':PDO_Password',$hased_password);
+                    $registration->bindparam(':PDO_Name',$json_data["name"]);
+                    $registration->execute();
+                    $dbh->commit();
+                }
+                catch (Exception $e)
+                {
+                    $dbh->rollBack();
+                    error_handler(400, $e->getCode(), $e->getMessage());
+                    exit;
+                }
+                //генерация токенов      
+                //token_generation();
+                error_handler(201, 0, 'Пользователь создан');
+            }
+        }
+        else
+        {
+            error_handler(400, 40002, 'Нет распознанных ключей запросов json');
+        }
     break;
     default:
         error_handler(400, 40002, 'Нет распознанных ключей запросов json');        
