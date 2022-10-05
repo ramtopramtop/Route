@@ -34,10 +34,6 @@ try {
   } catch (Exception $e) {
     die("Не удалось подключиться: " . $e->getMessage());
   }
-# mysql_connect("mysql-ramtop.alwaysdata.net", "ramtop", "Negrov_365");
-
-# mysql_select_db("ramtop_route");
-
 
 if(isset($_POST['submit']))
 
@@ -49,12 +45,6 @@ if(isset($_POST['submit']))
     $query->bindparam(':PDO_Login',$_POST['login']);
     $query->execute();
     $Registered_user=$query->fetch();
-    
-    # $query = mysql_query("SELECT User.ID, User.Password, User.Name FROM User WHERE User.Login='".mysql_real_escape_string($_POST['login'])."' LIMIT 1");
-
-           
-    #$data = mysql_fetch_assoc($query);
-            
 
     # Соавниваем пароли
 
