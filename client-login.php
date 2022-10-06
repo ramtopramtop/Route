@@ -12,7 +12,6 @@ require __DIR__ . '/vendor/autoload.php';
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
-
 //получение данных из джсон потока
 
 $postData = file_get_contents('php://input');
@@ -88,17 +87,22 @@ switch ($json_data["json_query"])
         if (isset($json_data["login"]) and isset($json_data["password"]))
         {
             //поиск пользователя
-            $password=md5(md5($json_data["password"]));
-            $query=$dbh->prepare("SELECT User.ID, User.Access_Rights FROM User WHERE User.Login=:PDO_Login and User.Password=:PDO_Password");
+            $query=$dbh->prepare("SELECT User.ID, User.Access_Rights, User.Password, User.Refresh_Token FROM User WHERE User.Login=:PDO_Login");
             $query->bindparam(':PDO_Login',$json_data["login"]);
-            $query->bindparam(':PDO_Password',$password);
             $query->execute();
             $Registered_user=$query->fetch(PDO::FETCH_ASSOC);
-            //если пользователь нашелся
+            //если пользователь нашелся и пароль подходит
             if ($Registered_user)
             {
+                if (password_verify($json_data["password"],$Registered_user['Password']))
+                {
                 //генерация токенов      
-                token_generation();                           
+                token_generation();
+                }
+                else
+                {
+                    error_handler(401, 40105, 'Неправильный логин/пароль');
+                }                           
             }
             else
             {
@@ -147,8 +151,6 @@ switch ($json_data["json_query"])
                     error_handler(400, $e->getCode(), $e->getMessage());
                     exit;
                 }
-                //генерация токенов      
-                //token_generation();
                 error_handler(201, 0, 'Пользователь создан');
             }
         }
@@ -157,25 +159,158 @@ switch ($json_data["json_query"])
             error_handler(400, 40002, 'Нет распознанных ключей запросов json');
         }
     break;
+    
+    //обновление токенов
+    case 'authorization_reneval':
+        check_token('refresh',1);
+    break;
+    
+    //запрос публичного ключа
+    case 'public_key':
+        $jsonpublicKey = ['server_key'=> $publicKey];
+        error_handler(200, 0, 'Нет ошибок', $jsonpublicKey);
+    break;
+    
+    //обновление имени/логина/пароля
+    case 'registration_change':
+        if (isset($json_data["login"]) and isset($json_data["password"])
+         and isset($json_data["login_new"]) and isset($json_data["password_new"]) and isset($json_data["name_new"]))
+        {
+            //поиск пользователя
+            $query=$dbh->prepare("SELECT User.ID, User.Password FROM User WHERE User.Login=:PDO_Login");
+            $query->bindparam(':PDO_Login',$json_data["login"]);
+            $query->execute();
+            $Registered_user=$query->fetch(PDO::FETCH_ASSOC);
+            //если пользователь нашелся и пароль подходит
+            if ($Registered_user)
+            {
+                if (password_verify($json_data["password"],$Registered_user['Password']))
+                {
+                    //изменение данных
+
+                    try
+                    {
+                        $hased_password = password_generation($json_data["password_new"]);
+                        $dbh->beginTransaction();
+                        $registration=$dbh->prepare("UPDATE User SET User.Login=:PDO_Login, User.Password=:PDO_Password, User.Name=:PDO_Name WHERE User.ID=:PDO_UserID");
+                        $registration->bindparam(':PDO_Login',$json_data["login_new"]);
+                        $registration->bindparam(':PDO_Password',$hased_password);
+                        $registration->bindparam(':PDO_Name',$json_data["name_new"]);
+                        $registration->bindparam(':PDO_UserID',$Registered_user["ID"]);
+                        $registration->execute();
+                        $dbh->commit();
+                    }
+                    catch (Exception $e)
+                    {
+                        $dbh->rollBack();
+                        error_handler(400, $e->getCode(), $e->getMessage());
+                        exit;
+                    }
+                    error_handler (200, 0, 'Нет ошибок');
+                }
+                else
+                {
+                    error_handler(401, 40105, 'Неправильный логин/пароль');
+                }                           
+            }
+            else
+            {
+                error_handler(401, 40105, 'Неправильный логин/пароль');
+            }
+        }
+        else
+        {
+            error_handler(400, 40002, 'Нет распознанных ключей запросов json');
+        }
+    break;
+
+    //удаление пользователя
+    case 'user_delete':
+        if (isset($json_data["login"]) and isset($json_data["password"]))
+        {
+            //поиск пользователя
+            $query=$dbh->prepare("SELECT User.ID, User.Password FROM User WHERE User.Login=:PDO_Login");
+            $query->bindparam(':PDO_Login',$json_data["login"]);
+            $query->execute();
+            $Registered_user=$query->fetch(PDO::FETCH_ASSOC);
+            //если пользователь нашелся и пароль подходит
+            if ($Registered_user)
+            {
+                if (password_verify($json_data["password"],$Registered_user['Password']))
+                {
+                    //изменение данных
+                    try
+                    {
+                        $random_password = password_generation(random_bytes(10));
+                        $random_login = random_bytes(10);
+                        $dbh->beginTransaction();
+                        $registration=$dbh->prepare("UPDATE User SET User.Login=:PDO_Login, User.Password=:PDO_Password, User.Name=:PDO_Name, User.Refresh_Token=0, User.Access_Rights=0 WHERE User.ID=:PDO_UserID");
+                        $registration->bindparam(':PDO_Login',$random_login);
+                        $registration->bindparam(':PDO_Password',$random_password);
+                        $registration->bindparam(':PDO_Name',$random_login);
+                        $registration->bindparam(':PDO_UserID',$Registered_user["ID"]);
+                        $registration->execute();
+                        $dbh->commit();
+                    }
+                    catch (Exception $e)
+                    {
+                        $dbh->rollBack();
+                        error_handler(400, $e->getCode(), $e->getMessage());
+                        exit;
+                    }
+                    error_handler (200, 0, 'Нет ошибок');
+                }
+                else
+                {
+                    error_handler(401, 40105, 'Неправильный логин/пароль');
+                }                           
+            }
+            else
+            {
+                error_handler(401, 40105, 'Неправильный логин/пароль');
+            }
+        }
+        else
+        {
+            error_handler(400, 40002, 'Нет распознанных ключей запросов json');
+        }
+    break;
+
+    //если нет подходящих аргументов в ключе json_query            
     default:
         error_handler(400, 40002, 'Нет распознанных ключей запросов json');        
 }
  
-
+//выгрузка токенов в формате json
 function token_generation()
 {
     global $access_token_lifetime;
     global $refresh_token_lifetime;
-
+    global $dbh;
+    global $Registered_user;
     //генерация токенов
-                
+    $refresh_token = token_payload('refresh',$refresh_token_lifetime);            
     $json_output = ['access_token'=> token_payload('access',$access_token_lifetime),
-    'refresh_token'=>token_payload('refresh',$refresh_token_lifetime)];
+    'refresh_token'=> $refresh_token];
+    //добавление/обновление рефреш токена в базе пользователей
+    try
+    {
+        $dbh->beginTransaction();
+        $registration=$dbh->prepare("UPDATE User SET User.Refresh_Token=:PDO_Token WHERE User.ID=:PDO_User_ID");
+        $registration->bindparam(':PDO_Token',$refresh_token);
+        $registration->bindparam(':PDO_User_ID',$Registered_user['ID']);
+        $registration->execute();
+        $dbh->commit();
+    }
+    catch (Exception $e)
+    {
+        $dbh->rollBack();
+        error_handler(400, $e->getCode(), $e->getMessage());
+        exit;
+    }
     error_handler (200, 0, 'Нет ошибок', $json_output);
-    //header('Content-Type: application/json');
-    //echo json_encode($json_output);
 }
-
+//создание jwt токенов
 function token_payload($token_type, $token_lifetime)
 {
     global $privateKey;
@@ -213,7 +348,7 @@ function token_payload($token_type, $token_lifetime)
     return JWT::encode($payload_access_token, $privateKey, 'RS256');
     
 }
-
+//обработка выгрузки сообщений
 function error_handler($http_error_code, $error_code, $error, $data_responce='')
 {
     http_response_code($http_error_code);
@@ -224,12 +359,13 @@ function error_handler($http_error_code, $error_code, $error, $data_responce='')
         $data_responce += ["error_code"=>$error_code, "error"=>$error];
     echo json_encode($data_responce);
 }
-
+// проверка 2 типов токенов
 function check_token($token_type_must_have, $access_rights)
 {
     global $Registered_user;
     global $publicKey;
     global $token_timezone;
+    global $dbh;
     //проверка указания авторизации
     if (!isset($_SERVER['HTTP_AUTHORIZATION']))
     {
@@ -260,7 +396,6 @@ function check_token($token_type_must_have, $access_rights)
                 {
                     //расшифровка токена
                     $token = JWT::decode($jwt, new Key($publicKey, 'RS256'));
-                    
                 }
                 catch(Exception $e)
                 {
@@ -279,10 +414,25 @@ function check_token($token_type_must_have, $access_rights)
                     //определение типа токена
                     if ($token->token_type == 'refresh' && $token_type_must_have == 'refresh')
                     {
-                        //генерация токенов
-                        $Registered_user=['ID'=>$token->user_id, 'Access_Rights'=>$token->access_level];      
-                        token_generation();
-                        exit;
+                        //проверка на наличие токена в базе
+                        $query=$dbh->prepare("SELECT User.ID, User.Refresh_Token FROM User WHERE User.ID=:PDO_User_ID");
+                        $query->bindparam(':PDO_User_ID',$token->user_id);
+                        $query->execute();
+                        $Registered_user=$query->fetch(PDO::FETCH_ASSOC);
+                        
+                        //если пользователь нашелся и пароль подходит
+                        if ($Registered_user['Refresh_Token'] == $jwt)
+                        {
+                            //генерация токенов
+                            $Registered_user=['ID'=>$token->user_id, 'Access_Rights'=>$token->access_level];      
+                            token_generation();
+                            exit;
+                        }
+                        else
+                        {
+                            error_handler(401,40103,'Токен утратил силу');
+                            exit;
+                        }
                     }
                     elseif ($token->token_type == 'access' && $token_type_must_have == 'access')
                     {

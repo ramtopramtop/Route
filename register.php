@@ -2,7 +2,9 @@
 // Страница регситрации нового пользователя
 
 #Поключаем данные авторизации БД
-include '../conn/dbase.php';
+require '../conn/dbase.php';
+//Подключение универсальных функций
+require 'functions.php';
 # Соединямся с БД PHP_PDO
 
 try
@@ -44,13 +46,13 @@ if(isset($_POST['submit']))
     if(count($err) == 0)
     {
         # Убираем лишние пробелы и делаем двойное шифрование
-        $password = md5(md5(trim($_POST['password'])));
+        $hased_password = password_generation($_POST['password']);
         try
         {
             $dbh->beginTransaction();
             $registration=$dbh->prepare("INSERT INTO User SET User.Login=:PDO_Login, User.Password=:PDO_Password, User.Name=:PDO_Name");
             $registration->bindparam(':PDO_Login',$_POST['login']);
-            $registration->bindparam(':PDO_Password',$password);
+            $registration->bindparam(':PDO_Password',$hased_password);
             $registration->bindparam(':PDO_Name',$_POST['name']);
             $registration->execute();
             $dbh->commit();

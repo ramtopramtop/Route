@@ -1,19 +1,18 @@
 <?
 session_start();
-
 #Поключаем данные авторизации БД
 include '../conn/dbase.php';
 
 # обеспечение секретности выкидыванием неавторизированных пользователей на страницу логона
-if(!isset($_SESSION['hash'])){
+
+if(!isset($_SESSION['hash']))
+{
     header("Location: login.php");
     exit;
 }
 
 
-
 # Соединямся с БД PHP_PDO
-
 try {
     $dbh = new PDO('mysql:host='.$PDO_Host.';dbname='.$PDO_DB_Name, $PDO_DB_User, $PDO_DB_Pass,
         array(PDO::ATTR_PERSISTENT => true));
