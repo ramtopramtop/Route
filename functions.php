@@ -1,4 +1,5 @@
 <?
+//общие функции
 //функция шифрования пароля (алгоритм blowfish)
 function password_generation($password)
 {

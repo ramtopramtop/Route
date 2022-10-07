@@ -1,4 +1,5 @@
-<?php
+<?
+//обработка json запросов
 //Подключение универсальных функций
 require 'functions.php';
 //Подключение настроек сервера
@@ -43,14 +44,17 @@ if (!isset($json_data["json_query"]))
 
 # Соединямся с БД PHP_PDO
 
-try {
+try
+{
     $dbh = new PDO('mysql:host='.$PDO_Host.';dbname='.$PDO_DB_Name, $PDO_DB_User, $PDO_DB_Pass,
         array(PDO::ATTR_PERSISTENT => true));
     $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);    
     
-  } catch (Exception $e) {
+}
+catch (Exception $e)
+{
     die("Не удалось подключиться: " . $e->getMessage());
-  }
+}
 
 //обработка джсона
 

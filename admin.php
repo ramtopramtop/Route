@@ -1,390 +1,373 @@
 <?
+//Страница администрирования БД
 session_start();
-#Поключаем данные авторизации БД
+
+//Поключаем данные авторизации БД
 include '../conn/dbase.php';
 
-# обеспечение секретности выкидыванием неавторизированных пользователей на страницу логона
-
+//обеспечение секретности выкидыванием неавторизированных пользователей на страницу логона
 if(!isset($_SESSION['hash']))
 {
     header("Location: login.php");
     exit;
 }
 
-
-# Соединямся с БД PHP_PDO
-try {
+//Соединямся с БД PHP_PDO
+try
+{
     $dbh = new PDO('mysql:host='.$PDO_Host.';dbname='.$PDO_DB_Name, $PDO_DB_User, $PDO_DB_Pass,
-        array(PDO::ATTR_PERSISTENT => true));
+    array(PDO::ATTR_PERSISTENT => true));
     $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);    
-    # echo "Подключились\n";
-  } catch (Exception $e) {
+}
+catch (Exception $e)
+{
     die("Не удалось подключиться: " . $e->getMessage());
-  }
+}
 
-
-
-
-
-#обработка изменения имени
+//обработка изменения имени
 if(isset($_POST['submit_name']))
 {
-    try {           
+    try
+    {
         $dbh->beginTransaction();
         $registration=$dbh->prepare("UPDATE User SET User.Name=:PDO_Name WHERE User.ID=:PDO_UserID");
         $registration->bindparam(':PDO_UserID',$_SESSION['user_id']);
         $registration->bindparam(':PDO_Name',$_POST['new_user_name']);
         $registration->execute();
         $dbh->commit();
-       #echo $_SESSION['user_id'].', '.$_POST['new_user_name']; 
-      } catch (Exception $e) {
+    }
+    catch (Exception $e)
+    {
         $dbh->rollBack();
         echo "Ошибка: " . $e->getMessage();
-      }
+    }
 
-      #меняем имя в текущей сессии
-      $_SESSION['user']=$_POST['new_user_name'];
-      header("Location: admin.php");
+    //меняем имя в текущей сессии
+    $_SESSION['user']=$_POST['new_user_name'];
+    header("Location: admin.php");
 }
 
 #обработка изменения пароля
 if(isset($_POST['submit_pass']))
 {
-  if($_POST['new_user_pass1']=$_POST['new_user_pass2'])
-  {
-    $User_password=md5(md5(trim($_POST['new_user_pass1'])));
+    if($_POST['new_user_pass1']=$_POST['new_user_pass2'])
+    {
+        $User_password=md5(md5(trim($_POST['new_user_pass1'])));
   
-    try {           
-        $dbh->beginTransaction();
-        $registration=$dbh->prepare("UPDATE User SET User.Password=:PDO_User_password WHERE User.ID=:PDO_UserID");
-        $registration->bindparam(':PDO_UserID',$_SESSION['user_id']);
-        $registration->bindparam(':PDO_User_password',$User_password);
-        $registration->execute();
-        $dbh->commit();
-       #echo $_SESSION['user_id'].', '.$_POST['new_user_name']; 
-      } catch (Exception $e) {
-        $dbh->rollBack();
-        echo "Ошибка: " . $e->getMessage();
-      }
-
-      
-  }
-  else
-  {
-    echo 'Пароли не совпадают';
-  }
-  header("Location: admin.php");
+        try
+        {           
+            $dbh->beginTransaction();
+            $registration=$dbh->prepare("UPDATE User SET User.Password=:PDO_User_password WHERE User.ID=:PDO_UserID");
+            $registration->bindparam(':PDO_UserID',$_SESSION['user_id']);
+            $registration->bindparam(':PDO_User_password',$User_password);
+            $registration->execute();
+            $dbh->commit();
+        }
+        catch (Exception $e)
+        {
+            $dbh->rollBack();
+            echo "Ошибка: " . $e->getMessage();
+        }
+    }
+    else
+    {
+        echo 'Пароли не совпадают';
+    }
+    header("Location: admin.php");
 }
 
-#запрос прав для получения данных администратора
-    
+//запрос прав для получения данных администратора
 $query_rights=$dbh->prepare("SELECT User.Access_Rights FROM User WHERE User.ID=:PDO_UserID");
 $query_rights->bindparam(':PDO_UserID',$_SESSION['user_id']);
 $query_rights->execute();
 $User_rights=$query_rights->fetch();
 
-#проверка прав доступа
+//проверка прав доступа
 if($User_rights['Access_Rights']==2)
 {
-  
-
- #обработка изменения прав доступа
-
-  if(isset($_POST['user_rights_change']))
-  {
-  
-  try {           
-    $dbh->beginTransaction();
-
-    #выбираем вариант замены прав в зависимости от текущих прав доступа
-
-    if ($_POST['user_rights_change_current']==1)
+    //обработка изменения прав доступа
+    if(isset($_POST['user_rights_change']))
     {
-      $registration=$dbh->prepare("UPDATE User SET User.Access_Rights=2 WHERE User.ID=:PDO_UserID");
+        try
+        {           
+            $dbh->beginTransaction();
+
+            //выбираем вариант замены прав в зависимости от текущих прав доступа
+            if ($_POST['user_rights_change_current']==1)
+            {
+                $registration=$dbh->prepare("UPDATE User SET User.Access_Rights=2 WHERE User.ID=:PDO_UserID");
+            }
+            else
+            {
+                $registration=$dbh->prepare("UPDATE User SET User.Access_Rights=1 WHERE User.ID=:PDO_UserID");
+            }
+            $registration->bindparam(':PDO_UserID',$_POST['user_rights_change_ID']);
+            $registration->execute();
+            $dbh->commit();
+        }
+        catch (Exception $e)
+        {
+            $dbh->rollBack();
+            echo "Ошибка: " . $e->getMessage();
+        }
+        header("Location: admin.php");
     }
-    else
+
+    //обработка изменения города
+    if(isset($_POST['town_change']))
     {
-      $registration=$dbh->prepare("UPDATE User SET User.Access_Rights=1 WHERE User.ID=:PDO_UserID");
+        try
+        {   
+            $dbh->beginTransaction();
+            $registration=$dbh->prepare("UPDATE Town SET Town.Name=:PDO_TownName WHERE Town.ID=:PDO_TownID");
+            $registration->bindparam(':PDO_TownID',$_POST['town_id']);
+            $registration->bindparam(':PDO_TownName',$_POST['town_name']);
+            $registration->execute();
+            $dbh->commit();
+        }
+        catch (Exception $e)
+        {
+            $dbh->rollBack();
+            echo "Ошибка: " . $e->getMessage();
+        }
+        header("Location: admin.php");
     }
-    
-    $registration->bindparam(':PDO_UserID',$_POST['user_rights_change_ID']);
-    $registration->execute();
-    $dbh->commit();
-       }
-   catch (Exception $e)
+
+    //обработка удаления города
+    if(isset($_POST['town_delete']))
     {
-    $dbh->rollBack();
-    echo "Ошибка: " . $e->getMessage();
+        try
+        {   
+            $dbh->beginTransaction();
+            $registration=$dbh->prepare("DELETE FROM Town WHERE Town.ID=:PDO_TownID");
+            $registration->bindparam(':PDO_TownID',$_POST['town_id']);
+            $registration->execute();
+            $dbh->commit();
+        }
+        catch (Exception $e)
+        {
+            $dbh->rollBack();
+            echo "Ошибка: " . $e->getMessage();
+        }
+        header("Location: admin.php");
     }
-    header("Location: admin.php");
-  }
 
-  #обработка изменения города
-  if(isset($_POST['town_change']))
-  {
-    try
-    {   
-      $dbh->beginTransaction();
-      $registration=$dbh->prepare("UPDATE Town SET Town.Name=:PDO_TownName WHERE Town.ID=:PDO_TownID");
-      $registration->bindparam(':PDO_TownID',$_POST['town_id']);
-      $registration->bindparam(':PDO_TownName',$_POST['town_name']);
-      $registration->execute();
-      $dbh->commit();
-    }
-    catch (Exception $e)
+    //обработка добавления города
+    if(isset($_POST['town_create']))
     {
-      $dbh->rollBack();
-      echo "Ошибка: " . $e->getMessage();
+        try
+        {   
+            $dbh->beginTransaction();
+            $registration=$dbh->prepare("INSERT INTO Town SET Town.Name=:PDO_TownName");
+            $registration->bindparam(':PDO_TownName',$_POST['town_name']);
+            $registration->execute();
+            $dbh->commit();
+        }
+        catch (Exception $e)
+        {
+            $dbh->rollBack();
+            echo "Ошибка: " . $e->getMessage();
+        }
+        header("Location: admin.php");
     }
-    header("Location: admin.php");
-  }
 
-  #обработка удаления города
-  
-  if(isset($_POST['town_delete']))
-  {
-    try
-    {   
-      $dbh->beginTransaction();
-      $registration=$dbh->prepare("DELETE FROM Town WHERE Town.ID=:PDO_TownID");
-      $registration->bindparam(':PDO_TownID',$_POST['town_id']);
-      $registration->execute();
-      $dbh->commit();
-    }
-    catch (Exception $e)
+    //обработка изменения маршрута
+    if(isset($_POST['route_change']))
     {
-      $dbh->rollBack();
-      echo "Ошибка: " . $e->getMessage();
+        try
+        {   
+            $dbh->beginTransaction();
+            $registration=$dbh->prepare("UPDATE Route SET Route.Name=:PDO_RouteName,Route.Town_ID=:PDO_RouteTownID WHERE Route.ID=:PDO_RouteID");
+            $registration->bindparam(':PDO_RouteID',$_POST['route_id']);
+            $registration->bindparam(':PDO_RouteName',$_POST['route_name']);
+            $registration->bindparam(':PDO_RouteTownID',$_POST['route_town']);
+            $registration->execute();
+            $dbh->commit();
+        }
+        catch (Exception $e)
+        {
+            $dbh->rollBack();
+            echo "Ошибка: " . $e->getMessage();
+        }
+        header("Location: admin.php");
     }
-    header("Location: admin.php");
-  }
 
-  #обработка добавления города
-
-  if(isset($_POST['town_create']))
-  {
-    try
-    {   
-      $dbh->beginTransaction();
-      $registration=$dbh->prepare("INSERT INTO Town SET Town.Name=:PDO_TownName");
-      $registration->bindparam(':PDO_TownName',$_POST['town_name']);
-      $registration->execute();
-      $dbh->commit();
-    }
-    catch (Exception $e)
+    //обработка удаления маршрута
+    if(isset($_POST['route_delete']))
     {
-      $dbh->rollBack();
-      echo "Ошибка: " . $e->getMessage();
+        try
+        {   
+            $dbh->beginTransaction();
+            $registration=$dbh->prepare("DELETE FROM Route WHERE Route.ID=:PDO_RouteID");
+            $registration->bindparam(':PDO_RouteID',$_POST['route_id']);
+            $registration->execute();
+            $dbh->commit();
+        }
+        catch (Exception $e)
+        {
+            $dbh->rollBack();
+            echo "Ошибка: " . $e->getMessage();
+        }
+        header("Location: admin.php");
     }
-    header("Location: admin.php");
-  }
 
-  #обработка изменения маршрута
-
-  if(isset($_POST['route_change']))
-  {
-    try
-    {   
-      $dbh->beginTransaction();
-      $registration=$dbh->prepare("UPDATE Route SET Route.Name=:PDO_RouteName,Route.Town_ID=:PDO_RouteTownID WHERE Route.ID=:PDO_RouteID");
-      $registration->bindparam(':PDO_RouteID',$_POST['route_id']);
-      $registration->bindparam(':PDO_RouteName',$_POST['route_name']);
-      $registration->bindparam(':PDO_RouteTownID',$_POST['route_town']);
-      $registration->execute();
-      $dbh->commit();
-    }
-    catch (Exception $e)
+    //обработка добавления маршрута
+    if(isset($_POST['route_create']))
     {
-      $dbh->rollBack();
-      echo "Ошибка: " . $e->getMessage();
+        try
+        {   
+            $dbh->beginTransaction();
+            $registration=$dbh->prepare("INSERT INTO Route SET Route.Name=:PDO_RouteName, Route.Town_ID=:PDO_RouteTownID");
+            $registration->bindparam(':PDO_RouteName',$_POST['route_name']);
+            $registration->bindparam(':PDO_RouteTownID',$_POST['route_town']);
+            $registration->execute();
+            $dbh->commit();
+        }
+        catch (Exception $e)
+        {
+            $dbh->rollBack();
+            echo "Ошибка: " . $e->getMessage();
+        }
+        header("Location: admin.php");
     }
-    header("Location: admin.php");
-  }
 
-  #обработка удаления маршрута
-  
-  if(isset($_POST['route_delete']))
-  {
-    try
-    {   
-      $dbh->beginTransaction();
-      $registration=$dbh->prepare("DELETE FROM Route WHERE Route.ID=:PDO_RouteID");
-      $registration->bindparam(':PDO_RouteID',$_POST['route_id']);
-      $registration->execute();
-      $dbh->commit();
-    }
-    catch (Exception $e)
+    //обработка изменения сезона
+    if(isset($_POST['seazon_change']))
     {
-      $dbh->rollBack();
-      echo "Ошибка: " . $e->getMessage();
+        try
+        {   
+            $dbh->beginTransaction();
+            $registration=$dbh->prepare("UPDATE Seazon SET Seazon.Name=:PDO_SeazonName,Seazon.Route_ID=:PDO_SeazonRouteID WHERE Seazon.ID=:PDO_SeazonID");
+            $registration->bindparam(':PDO_SeazonID',$_POST['seazon_id']);
+            $registration->bindparam(':PDO_SeazonName',$_POST['seazon_name']);
+            $registration->bindparam(':PDO_SeazonRouteID',$_POST['seazon_route']);
+            $registration->execute();
+            $dbh->commit();
+        }
+        catch (Exception $e)
+        {
+            $dbh->rollBack();
+            echo "Ошибка: " . $e->getMessage();
+        }
+        header("Location: admin.php");
     }
-    header("Location: admin.php");
-  }
 
-  #обработка добавления маршрута
-  if(isset($_POST['route_create']))
-  {
-    try
-    {   
-      $dbh->beginTransaction();
-      $registration=$dbh->prepare("INSERT INTO Route SET Route.Name=:PDO_RouteName, Route.Town_ID=:PDO_RouteTownID");
-      $registration->bindparam(':PDO_RouteName',$_POST['route_name']);
-      $registration->bindparam(':PDO_RouteTownID',$_POST['route_town']);
-      $registration->execute();
-      $dbh->commit();
-    }
-    catch (Exception $e)
+    //обработка удаления сезона
+    if(isset($_POST['seazon_delete']))
     {
-      $dbh->rollBack();
-      echo "Ошибка: " . $e->getMessage();
+        try
+        {   
+            $dbh->beginTransaction();
+            $registration=$dbh->prepare("DELETE FROM Seazon WHERE Seazon.ID=:PDO_SeazonID");
+            $registration->bindparam(':PDO_SeazonID',$_POST['seazon_id']);
+            $registration->execute();
+            $dbh->commit();
+        }
+        catch (Exception $e)
+        {
+            $dbh->rollBack();
+            echo "Ошибка: " . $e->getMessage();
+        }
+        header("Location: admin.php");
     }
-    header("Location: admin.php");
-  }
 
-
-  #обработка изменения сезона
-
-  if(isset($_POST['seazon_change']))
-  {
-    try
-    {   
-      $dbh->beginTransaction();
-      $registration=$dbh->prepare("UPDATE Seazon SET Seazon.Name=:PDO_SeazonName,Seazon.Route_ID=:PDO_SeazonRouteID WHERE Seazon.ID=:PDO_SeazonID");
-      $registration->bindparam(':PDO_SeazonID',$_POST['seazon_id']);
-      $registration->bindparam(':PDO_SeazonName',$_POST['seazon_name']);
-      $registration->bindparam(':PDO_SeazonRouteID',$_POST['seazon_route']);
-      $registration->execute();
-      $dbh->commit();
-    }
-    catch (Exception $e)
+    //обработка добавления сезона
+    if(isset($_POST['seazon_create']))
     {
-      $dbh->rollBack();
-      echo "Ошибка: " . $e->getMessage();
+        try
+        {   
+            $dbh->beginTransaction();
+            $registration=$dbh->prepare("INSERT INTO Seazon SET Seazon.Name=:PDO_SeazonName, Seazon.Route_ID=:PDO_SeazonRouteID");
+            $registration->bindparam(':PDO_SeazonName',$_POST['seazon_name']);
+            $registration->bindparam(':PDO_SeazonRouteID',$_POST['seazon_route']);
+            $registration->execute();
+            $dbh->commit();
+        }
+        catch (Exception $e)
+        {
+        $dbh->rollBack();
+        echo "Ошибка: " . $e->getMessage();
+        }
+        header("Location: admin.php");
     }
-    header("Location: admin.php");
-  }
 
-  #обработка удаления сезона
-  
-  if(isset($_POST['seazon_delete']))
-  {
-    try
-    {   
-      $dbh->beginTransaction();
-      $registration=$dbh->prepare("DELETE FROM Seazon WHERE Seazon.ID=:PDO_SeazonID");
-      $registration->bindparam(':PDO_SeazonID',$_POST['seazon_id']);
-      $registration->execute();
-      $dbh->commit();
-    }
-    catch (Exception $e)
+    //обработка удаления дня из списка дней сезона
+    if(isset($_POST['seazon_day_delete']))
     {
-      $dbh->rollBack();
-      echo "Ошибка: " . $e->getMessage();
+        try
+        {   
+            $dbh->beginTransaction();
+            $registration=$dbh->prepare("DELETE FROM Seazon_days WHERE Seazon_days.ID=:PDO_SeazonDayID");
+            $registration->bindparam(':PDO_SeazonDayID',$_POST['seazon_day_id']);
+            $registration->execute();
+            $dbh->commit();
+        }
+        catch (Exception $e)
+        {
+        $dbh->rollBack();
+        echo "Ошибка: " . $e->getMessage();
+        }
+        header("Location: admin.php");
     }
-    header("Location: admin.php");
-  }
 
-  #обработка добавления сезона
-  if(isset($_POST['seazon_create']))
-  {
-    try
-    {   
-      $dbh->beginTransaction();
-      $registration=$dbh->prepare("INSERT INTO Seazon SET Seazon.Name=:PDO_SeazonName, Seazon.Route_ID=:PDO_SeazonRouteID");
-      $registration->bindparam(':PDO_SeazonName',$_POST['seazon_name']);
-      $registration->bindparam(':PDO_SeazonRouteID',$_POST['seazon_route']);
-      $registration->execute();
-      $dbh->commit();
-    }
-    catch (Exception $e)
+    //обработка добавления даты в маршрут
+    if(isset($_POST['seazon_day_create']))
     {
-      $dbh->rollBack();
-      echo "Ошибка: " . $e->getMessage();
+        try
+        {   
+            $dbh->beginTransaction();
+            $registration=$dbh->prepare("INSERT INTO Seazon_days SET Seazon_days.Day=:PDO_SeazonDayDay, Seazon_days.Seazon_ID=:PDO_SeazonDaySeazonID");
+            $registration->bindparam(':PDO_SeazonDayDay',$_POST['seazon_day_day']);
+            $registration->bindparam(':PDO_SeazonDaySeazonID',$_POST['seazon_day_seazon']);
+            $registration->execute();
+            $dbh->commit();
+            }
+        catch (Exception $e)
+        {
+            $dbh->rollBack();
+            echo "Ошибка: " . $e->getMessage();
+        }
+        header("Location: admin.php");
     }
-    header("Location: admin.php");
-  }
 
-  #обработка удаления дня из списка дней сезона
-  
-  if(isset($_POST['seazon_day_delete']))
-  {
-    try
-    {   
-      $dbh->beginTransaction();
-      $registration=$dbh->prepare("DELETE FROM Seazon_days WHERE Seazon_days.ID=:PDO_SeazonDayID");
-      $registration->bindparam(':PDO_SeazonDayID',$_POST['seazon_day_id']);
-      $registration->execute();
-      $dbh->commit();
-    }
-    catch (Exception $e)
+    //обработка изменения навигационной точки
+    if(isset($_POST['navpoint_change']))
     {
-      $dbh->rollBack();
-      echo "Ошибка: " . $e->getMessage();
+        try
+        {   
+            $dbh->beginTransaction();
+            $registration=$dbh->prepare("UPDATE Navpoint SET Navpoint.Tag=:PDO_NavpointTag, Navpoint.Coordinates=PointFromText(concat('POINT(',:PDO_NavpointX,' ',:PDO_NavpointY,')')) WHERE Navpoint.ID=:PDO_NavpointID");
+            $registration->bindparam(':PDO_NavpointID',$_POST['navpoint_id']);
+            $registration->bindparam(':PDO_NavpointTag',$_POST['navpoint_tag']);
+            $registration->bindparam(':PDO_NavpointX',$_POST['navpoint_x']);
+            $registration->bindparam(':PDO_NavpointY',$_POST['navpoint_y']);
+            $registration->execute();
+            $dbh->commit();
+        }
+        catch (Exception $e)
+        {
+            $dbh->rollBack();
+            echo "Ошибка: " . $e->getMessage();
+        }
+        header("Location: admin.php");
     }
-    header("Location: admin.php");
-  }
-
-  #обработка добавления даты в маршрут
-
-  if(isset($_POST['seazon_day_create']))
-  {
-    try
-    {   
-      $dbh->beginTransaction();
-      $registration=$dbh->prepare("INSERT INTO Seazon_days SET Seazon_days.Day=:PDO_SeazonDayDay, Seazon_days.Seazon_ID=:PDO_SeazonDaySeazonID");
-      $registration->bindparam(':PDO_SeazonDayDay',$_POST['seazon_day_day']);
-      $registration->bindparam(':PDO_SeazonDaySeazonID',$_POST['seazon_day_seazon']);
-      $registration->execute();
-      $dbh->commit();
-    }
-    catch (Exception $e)
-    {
-      $dbh->rollBack();
-      echo "Ошибка: " . $e->getMessage();
-    }
-    header("Location: admin.php");
-  }
-
-  #обработка изменения навигационной точки
-
-  if(isset($_POST['navpoint_change']))
-  {
-    try
-    {   
-      $dbh->beginTransaction();
-      $registration=$dbh->prepare("UPDATE Navpoint SET Navpoint.Tag=:PDO_NavpointTag, Navpoint.Coordinates=PointFromText(concat('POINT(',:PDO_NavpointX,' ',:PDO_NavpointY,')')) WHERE Navpoint.ID=:PDO_NavpointID");
-      $registration->bindparam(':PDO_NavpointID',$_POST['navpoint_id']);
-      $registration->bindparam(':PDO_NavpointTag',$_POST['navpoint_tag']);
-      $registration->bindparam(':PDO_NavpointX',$_POST['navpoint_x']);
-      $registration->bindparam(':PDO_NavpointY',$_POST['navpoint_y']);
-      $registration->execute();
-      $dbh->commit();
-    }
-    catch (Exception $e)
-    {
-      $dbh->rollBack();
-      echo "Ошибка: " . $e->getMessage();
-    }
-    header("Location: admin.php");
-  }
  
-  #обработка удаления навигационной точки
-   
-  if(isset($_POST['navpoint_delete']))
-  {
-    try
-    {   
-      $dbh->beginTransaction();
-      $registration=$dbh->prepare("DELETE FROM Navpoint WHERE Navpoint.ID=:PDO_NavpointID");
-      $registration->bindparam(':PDO_NavpointID',$_POST['navpoint_id']);
-      $registration->execute();
-      $dbh->commit();
-    }
-    catch (Exception $e)
+    //обработка удаления навигационной точки
+    if(isset($_POST['navpoint_delete']))
     {
-      $dbh->rollBack();
-      echo "Ошибка: " . $e->getMessage();
-    }
+        try
+        {   
+            $dbh->beginTransaction();
+            $registration=$dbh->prepare("DELETE FROM Navpoint WHERE Navpoint.ID=:PDO_NavpointID");
+            $registration->bindparam(':PDO_NavpointID',$_POST['navpoint_id']);
+            $registration->execute();
+            $dbh->commit();
+        }
+        catch (Exception $e)
+        {
+            $dbh->rollBack();
+            echo "Ошибка: " . $e->getMessage();
+        }
     header("Location: admin.php");
   }
  
