@@ -13,7 +13,7 @@ require __DIR__ . '/vendor/autoload.php';
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
-//получение данных из джсон потока
+//получение данных джсон из потока
 
 $postData = file_get_contents('php://input');
 
