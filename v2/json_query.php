@@ -1,8 +1,6 @@
 <?php //обработка json-запросов/json-query processing
-//Поключение данных авторизации БД
-require '../../conn/dbase.php';
 
-class User_registering implements What_is_you_name //регистрирующийся пользователь/registering user
+class User_registering implements Ask //регистрирующийся пользователь/registering user
 {
     private $name; //имя пользователя/user name
     private $login; //логин пользователя/user login
@@ -19,117 +17,75 @@ class User_registering implements What_is_you_name //регистрирующи�
             }
             $this -> name = $json_data["name"];
             $this -> login = $json_data["login"];
-            $this -> password = $json_data["password"];
-            echo $this -> name.' '.$this -> login.' '.$this -> password;
+            $hashed_password = new hashed_password($json_data["password"]);
+            $this -> password = $hashed_password;
+            //echo $this -> name.' '.$this -> login.' '.$this -> password;
         }
         catch (Exception $e)
         {
+            http_response_code(400);
             exit ($e->getMessage());
             
         }
     }
-
-    function What_is_you_name()
+    
+    function Save_to_base()
     {
-        return $this->name;
-    }
-}
-
-class What_is_you_name
-{
-    function What_is_you_name()
-    {
-        
-    }
-}
-
-class DB_connection
-{
-    function __construct()
-    {
-        global $PDO_Host;
-        global $PDO_DB_Name;
-        global $PDO_DB_User;
-        global $PDO_DB_Pass;
+        //Поключение данных авторизации БД
+        require '../../conn/dbase.php';
+        //global $PDO_Host;
+        //global $PDO_DB_Name;
+        //global $PDO_DB_User;
+        //global $PDO_DB_Pass;
         try
         {
-            $this = new PDO('mysql:host='.$PDO_Host.';dbname='.$PDO_DB_Name, $PDO_DB_User, $PDO_DB_Pass,
+            $dbh = new PDO('mysql:host='.$PDO_Host.';dbname='.$PDO_DB_Name, $PDO_DB_User, $PDO_DB_Pass,
              array(PDO::ATTR_PERSISTENT => true));
-            $this->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);    
-    
+            $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            //$hased_password = password_generation($this -> password);
+            $dbh->beginTransaction();
+            $registration=$dbh->prepare("INSERT INTO User SET User.Login=:PDO_Login, User.Password=:PDO_Password, User.Name=:PDO_Name");
+            $registration->bindparam(':PDO_Login',$this -> login);
+            $registration->bindvalue(':PDO_Password',$this -> password -> say_password());
+            $registration->bindvalue(':PDO_Name',$this -> name);
+            $registration->execute();
+            $dbh->commit();
         }
         catch (Exception $e)
         {
-            exit("Не удалось подключиться: ".$e->getMessage());
+            $dbh->rollBack();
+            http_response_code(400);
+            exit($e->getMessage());
         }
     }
 }
 
-class User_from_DB
+interface Ask
 {
-    private $name; //имя пользователя/user name
-    private $login; //логин пользователя/user login
-    private $password;//пароль пользователя/user password
+    public function Save_to_base();
+}
 
-    function __construct($db_connect, $searchng_user)
+class hashed_password implements Tell
+{
+    private $hashed_password;
+
+    function __construct($password)
     {
-        try
-        {
-            $query=$db_connect->prepare("SELECT User.ID, User.Access_Rights FROM User WHERE User.Login=:PDO_Login");
-            $query->bindparam(':PDO_Login',$searchng_user -> What_is_you_name());
-            $query->execute();
-            $Registered_user = $query->fetch(PDO::FETCH_ASSOC);  
-    
-        }
-        catch (Exception $e)
-        {
-            exit("Не удалось подключиться: ".$e->getMessage());
-        }
+        $this -> hashed_password = password_hash($password, PASSWORD_BCRYPT);
     }
-}
 
-class Compared_user implements DB
-{
-    function Record_to_base()
+    function say_password()
     {
-        global $PDO_Host;
-        global $PDO_DB_Name;
-        global $PDO_DB_User;
-        global $PDO_DB_Pass;
-        $dbh = new PDO('mysql:host='.$PDO_Host.';dbname='.$PDO_DB_Name, $PDO_DB_User, $PDO_DB_Pass,
-            array(PDO::ATTR_PERSISTENT => true));
-        $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-        try
-                {
-                    //$hased_password = password_generation($json_data["password"]);
-                    $dbh->beginTransaction();
-                    $registration=$dbh->prepare("INSERT INTO User SET User.Login=:PDO_Login, User.Password=:PDO_Password, User.Name=:PDO_Name");
-                    $registration->bindvalue(':PDO_Login','login');
-                    $registration->bindvalue(':PDO_Password',"password");
-                    $registration->bindvalue(':PDO_Name',"name");
-                    $registration->execute();
-                    $dbh->commit();
-                }
-                catch (Exception $e)
-                {
-                    $dbh->rollBack();
-                    exit($e->getMessage());
-                }
+        return $this -> hashed_password;
     }
 }
 
-interface DB
+interface Tell
 {
-    function Record_to_base();
+    function say_password();
 }
-
-//$record=new Compared_user();
-//$record->Record_to_base();
 
 $user_reg = new User_registering;
-$connection = new DB_connection;
-var_dump($user_reg, $connection);
-$user_from_db = new User_from_DB($connection, $user_reg);
+$user_reg -> Save_to_base();
 
 ?>
