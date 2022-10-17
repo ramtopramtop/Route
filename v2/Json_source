@@ -1,0 +1,25 @@
+<?php
+class Json_source implements Say_source
+{
+    private $json_input;
+    
+    function __construct()
+    {
+        try
+        {
+            $this -> json_input=json_decode(file_get_contents('php://input'),true);
+        }
+        catch (Exception $e)
+        {
+            http_response_code(400);
+            exit ($e->getMessage());
+        
+        }
+    }
+
+interface Say_source
+{
+
+}
+}
+?>
