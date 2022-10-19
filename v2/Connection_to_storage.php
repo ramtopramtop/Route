@@ -12,7 +12,7 @@ class Connection_to_storage implements Say_connection
              array(PDO::ATTR_PERSISTENT => true));
              $this -> connect_to->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         }
-        catch (Exception $e)
+        catch (Error $e)
         {
             http_response_code(400);
             exit ($e->getMessage());

@@ -12,8 +12,14 @@ class Query_from_source implements Say_query
                 throw new Exception('Нет ключа запроса');
             }
             $this -> query_name = $source_query ["query"];
+            require $this -> Say_query().'.php';//динамическое подключение файла с классом
         }
         catch (Exception $e)
+        {
+            http_response_code(400);
+            exit ($e->getMessage());
+        }
+        catch (Error $e)
         {
             http_response_code(400);
             exit ($e->getMessage());

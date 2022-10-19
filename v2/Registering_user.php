@@ -1,38 +1,38 @@
 <?php
-class Registering_user implements Ask_registering_user //регистрирующийся пользователь/registering user
+class Registering_user //регистрирующийся пользователь/registering user
 {
     private $name; //имя пользователя/user name
     private $login; //логин пользователя/user login
     private $password;//пароль пользователя/user password
 
-    function __construct()
+    function __construct($source_query)
     {
         try
         {
             require 'Hashed_password.php';
-            $json_data=json_decode(file_get_contents('php://input'),true);
-            if (!isset($json_data["login"])||!isset($json_data["password"])||!isset($json_data["name"]))
+            require 'Connection_to_storage.php';
+            if (!isset($source_query["login"])||!isset($source_query["password"])||!isset($source_query["name"]))
             {
                 throw new Exception('Не хватает параметров');
             }
-            $this -> name = $json_data["name"];
-            $this -> login = $json_data["login"];
-            $hashed_password = new Hashed_password($json_data["password"]);
+            $this -> name = $source_query["name"];
+            $this -> login = $source_query["login"];
+            $hashed_password = new Hashed_password($source_query["password"]);
             $this -> password = $hashed_password;
         }
         catch (Exception $e)
         {
             http_response_code(400);
-            exit ($e->getMessage());
-            
+            exit ($e->getMessage());  
         }
-    }
-    
-    function Save_to_base()
-    {
+        catch (Error $e)
+        {
+            http_response_code(400);
+            exit ($e->getMessage());
+        }
+
         try
         {
-            require 'Connection.php';
             $dbh = new Connection_to_storage();
             $dbh -> Say_connection() -> beginTransaction();
             $registration = $dbh -> Say_connection() -> prepare("INSERT INTO User SET User.Login=:PDO_Login, User.Password=:PDO_Password, User.Name=:PDO_Name");
@@ -48,14 +48,12 @@ class Registering_user implements Ask_registering_user //регистрирую�
             http_response_code(400);
             exit($e->getMessage());
         }
+        catch (Error $e)
+        {
+            $dbh -> Say_connection() -> rollBack();
+            http_response_code(400);
+            exit ($e->getMessage());
+        }
     }
 }
-
-interface Ask_registering_user
-{
-    public function Save_to_base();
-}
-
-$user_reg = new Registering_user;
-$user_reg -> Save_to_base();
 ?>
