@@ -1,5 +1,5 @@
 <?php
-class Json_source implements Say_source
+class Json_source implements Say
 {
     private $json_input;
     
@@ -17,21 +17,24 @@ class Json_source implements Say_source
         }
     }
 
-    function Say_source()
+    function Say()
     {
         return $this -> json_input;
     }
 }
 
-interface Say_source
+interface Say
 {
-    public function Say_source();
+    public function Say();
 }
+
+
 
 //разделение создание объектов нужно для динамического подключения файлов с классами,
 //т.к. компилятор инициализирует объекты по порядку следования, а не по логике вложенности
 $source = new Json_source;
-$query_tag = new Query_from_source($source -> Say_source()); 
+$query_tag = new Query_from_source($source -> Say()); 
 $request_name = $query_tag -> Say_query();
-$query_object = new $request_name($source -> Say_source());
+$query_object = new $request_name($source -> Say());
+$query_object -> ask_action();
 ?>

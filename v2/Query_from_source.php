@@ -26,13 +26,13 @@ class Query_from_source implements Say_query
         }
     }
     
-    function Say_query()
+    function Say()
     {
         return $this -> query_name;
     }
 }
 
-interface Say_query
+interface Say
 {
     public function Say_query();
 }

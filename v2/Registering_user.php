@@ -1,5 +1,5 @@
 <?php
-class Registering_user //регистрирующийся пользователь/registering user
+class Registering_user implements Ask //регистрирующийся пользователь/registering user
 {
     private $name; //имя пользователя/user name
     private $login; //логин пользователя/user login
