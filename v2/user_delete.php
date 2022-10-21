@@ -1,27 +1,20 @@
 <?php
-class rename implements ask
+class user_delete implements ask
 {
     private $login; //логин пользователя/user login
     private $password;//пароль пользователя/user password
-    private $password_new;
-    private $name_new;
-    private $ID;
 
     function __construct($source_query)
     {
         try
         {
             require 'hashed_password.php';
-            
-            if (!isset($source_query["login"])||!isset($source_query["password"])
-             ||!isset($source_query["password_new"])||!isset($source_query["name_new"]))
+            if (!isset($source_query["login"])||!isset($source_query["password"]))
             {
                 throw new Exception('Не хватает параметров');
             }
-            $this -> name_new = $source_query["name_new"];
             $this -> login = $source_query["login"];
             $this -> password = new hashed_password($source_query["password"]);
-            $this -> password_new = new hashed_password($source_query["password_new"]);
         }
         catch (Exception $e)
         {
@@ -52,9 +45,9 @@ class rename implements ask
             http_response_code(400);
             exit ($e->getMessage());
         }
+
         try
         {
-            
             //если пользователь нашелся и пароль подходит
             if (!$Registered_user||!$this -> password -> compare($Registered_user['Password']))
             {
@@ -62,15 +55,18 @@ class rename implements ask
             }
             //изменение данных
             $this -> ID = $Registered_user['ID'];
-            $new_hashed_password_temp = $this -> password_new -> say();//подавление предупреждающего уведомления компилятора пхп
+            $random_password = new hashed_password(random_bytes(10));
+            $password_temp = $random_password -> say();//подавление предупреждающего уведомления компилятора пхп
+            $random_login = random_bytes(10);
             $dbh -> say()-> beginTransaction();
-            $registration = $dbh -> say() -> prepare("UPDATE User SET User.Password=:PDO_Password, User.Name=:PDO_Name WHERE User.ID=:PDO_UserID");
-            $registration->bindparam(':PDO_Password', $new_hashed_password_temp);
-            $registration->bindparam(':PDO_Name',$this -> name_new);
-            $registration->bindparam(':PDO_UserID',$this -> ID);
+            $registration = $dbh -> say() -> prepare("UPDATE User SET User.Login=:PDO_Login, User.Password=:PDO_Password,
+             User.Name=:PDO_Name, User.Refresh_Token=0, User.Access_Rights=0 WHERE User.ID=:PDO_UserID");
+            $registration->bindparam(':PDO_Login',$random_login);
+            $registration->bindparam(':PDO_Password',$password_temp);
+            $registration->bindparam(':PDO_Name',$random_login);
+            $registration->bindparam(':PDO_UserID',$Registered_user["ID"]);
             $registration->execute();
             $dbh -> say() -> commit();
-            //echo $this -> ID.'   '.$hashed_password_new.'  '.$this -> name;
         }
         catch (Exception $e)
         {
@@ -86,4 +82,3 @@ class rename implements ask
         }
     }
 }
-?>
