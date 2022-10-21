@@ -1,7 +1,6 @@
 <?php
-class Rename
+class rename implements ask
 {
-    private $name; //имя пользователя/user name
     private $login; //логин пользователя/user login
     private $password;//пароль пользователя/user password
     private $password_new;
@@ -12,20 +11,17 @@ class Rename
     {
         try
         {
-            require 'Hashed_password.php';
-            require 'Connection_to_storage.php';
-            if (!isset($source_query["login"])||!isset($source_query["password"])||!isset($source_query["name"])
+            require 'hashed_password.php';
+            
+            if (!isset($source_query["login"])||!isset($source_query["password"])
              ||!isset($source_query["password_new"])||!isset($source_query["name_new"]))
             {
                 throw new Exception('Не хватает параметров');
             }
-            $this -> name = $source_query["name"];
             $this -> name_new = $source_query["name_new"];
             $this -> login = $source_query["login"];
-            $hashed_password = new Hashed_password($source_query["password"]);
-            $hashed_password_new = new Hashed_password($source_query["password_new"]);
-            $this -> password = $hashed_password;
-            $this -> password_new = $hashed_password_new;
+            $this -> password = new hashed_password($source_query["password"]);
+            $this -> password_new = new hashed_password($source_query["password_new"]);
         }
         catch (Exception $e)
         {
@@ -37,12 +33,16 @@ class Rename
             http_response_code(400);
             exit ($e->getMessage());
         }
-
+    }
+    
+    function ask()
+    {
         //поиск пользователя
         try
         {
-            $dbh = new Connection_to_storage();
-            $query = $dbh -> Say_connection() -> prepare("SELECT User.ID, User.Password FROM User WHERE User.Login=:PDO_Login");
+            require 'connection_to_storage.php';
+            $dbh = new connection_to_storage();
+            $query = $dbh -> say() -> prepare("SELECT User.ID, User.Password FROM User WHERE User.Login=:PDO_Login");
             $query -> bindparam(':PDO_Login',$this -> login);
             $query -> execute();
             $Registered_user=$query->fetch(PDO::FETCH_ASSOC);            
@@ -54,31 +54,33 @@ class Rename
         }
         try
         {
+            
             //если пользователь нашелся и пароль подходит
-            if (!$Registered_user||password_verify($this -> password, $Registered_user['Password']))
+            if (!$Registered_user||!$this -> password -> compare($Registered_user['Password']))
             {
                 throw new Exception('Нет пользователя/неправильный пароль');
             }
             //изменение данных
             $this -> ID = $Registered_user['ID'];
-            $dbh -> Say_connection()-> beginTransaction();
-            $registration = $dbh -> Say_connection() -> prepare("UPDATE User SET User.Login=:PDO_Login, User.Password=:PDO_Password, User.Name=:PDO_Name WHERE User.ID=:PDO_UserID");
-            $registration->bindparam(':PDO_Login',$this -> login_new);
-            $registration->bindparam(':PDO_Password',$hased_password_new);
-            $registration->bindparam(':PDO_Name',$this -> name);
+            $new_hashed_password_temp = $this -> password_new -> say();//подавление предупреждающего уведомления компилятора пхп
+            $dbh -> say()-> beginTransaction();
+            $registration = $dbh -> say() -> prepare("UPDATE User SET User.Password=:PDO_Password, User.Name=:PDO_Name WHERE User.ID=:PDO_UserID");
+            $registration->bindparam(':PDO_Password', $new_hashed_password_temp);
+            $registration->bindparam(':PDO_Name',$this -> name_new);
             $registration->bindparam(':PDO_UserID',$this -> ID);
             $registration->execute();
-            $dbh -> Say_connection() -> commit();
+            $dbh -> say() -> commit();
+            //echo $this -> ID.'   '.$hashed_password_new.'  '.$this -> name;
         }
         catch (Exception $e)
         {
-            $dbh -> Say_connection() -> rollBack();
+            
             http_response_code(400);
             exit($e->getMessage());
         }
         catch (Error $e)
         {
-            $dbh -> Say_connection() -> rollBack();
+            //$dbh -> say() -> rollBack();
             http_response_code(400);
             exit ($e->getMessage());
         }

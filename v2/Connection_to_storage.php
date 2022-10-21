@@ -1,5 +1,5 @@
 <?php
-class Connection_to_storage implements Say_connection
+class connection_to_storage implements say
 {
     private $connect_to;
 
@@ -20,14 +20,9 @@ class Connection_to_storage implements Say_connection
         }
     }
 
-    function Say_connection()
+    function say()
     {
         return $this -> connect_to;
     }
-}
-
-interface Say_connection
-{
-    public function Say_connection();
 }
 ?>

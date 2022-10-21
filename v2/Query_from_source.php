@@ -1,5 +1,5 @@
 <?php
-class Query_from_source implements Say_query
+class query_from_source implements say
 {
     private $query_name;
 
@@ -12,7 +12,7 @@ class Query_from_source implements Say_query
                 throw new Exception('Нет ключа запроса');
             }
             $this -> query_name = $source_query ["query"];
-            require $this -> Say_query().'.php';//динамическое подключение файла с классом
+            require $this -> Say().'.php';//динамическое подключение файла с классом
         }
         catch (Exception $e)
         {
@@ -26,14 +26,9 @@ class Query_from_source implements Say_query
         }
     }
     
-    function Say()
+    function say()
     {
         return $this -> query_name;
     }
-}
-
-interface Say
-{
-    public function Say_query();
 }
 ?>

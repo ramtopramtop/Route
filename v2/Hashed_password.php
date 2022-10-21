@@ -1,21 +1,28 @@
 <?php
-class Hashed_password implements Say_password
+class hashed_password implements say, compare
 {
+    private $password;
     private $hashed_password;
 
     function __construct($password)
     {
+        $this -> password = $password;
         $this -> hashed_password = password_hash($password, PASSWORD_BCRYPT);
     }
 
-    function say_password()
+    function say()
     {
         return $this -> hashed_password;
     }
-}
 
-interface Say_password
+    function compare($password)
+    {
+        return password_verify($this -> password, $password);
+    }
+
+}
+interface compare
 {
-    function say_password();
+    function compare($password);
 }
 ?>

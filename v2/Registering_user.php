@@ -1,5 +1,5 @@
 <?php
-class Registering_user implements Ask //регистрирующийся пользователь/registering user
+class registering_user implements ask //регистрирующийся пользователь/registering user
 {
     private $name; //имя пользователя/user name
     private $login; //логин пользователя/user login
@@ -9,15 +9,14 @@ class Registering_user implements Ask //регистрирующийся пол�
     {
         try
         {
-            require 'Hashed_password.php';
-            require 'Connection_to_storage.php';
+            require 'hashed_password.php';
             if (!isset($source_query["login"])||!isset($source_query["password"])||!isset($source_query["name"]))
             {
                 throw new Exception('Не хватает параметров');
             }
             $this -> name = $source_query["name"];
             $this -> login = $source_query["login"];
-            $hashed_password = new Hashed_password($source_query["password"]);
+            $hashed_password = new hashed_password($source_query["password"]);
             $this -> password = $hashed_password;
         }
         catch (Exception $e)
@@ -30,27 +29,31 @@ class Registering_user implements Ask //регистрирующийся пол�
             http_response_code(400);
             exit ($e->getMessage());
         }
+    }
 
+    function ask()
+    {
         try
         {
-            $dbh = new Connection_to_storage();
-            $dbh -> Say_connection() -> beginTransaction();
-            $registration = $dbh -> Say_connection() -> prepare("INSERT INTO User SET User.Login=:PDO_Login, User.Password=:PDO_Password, User.Name=:PDO_Name");
+            require 'connection_to_storage.php';
+            $dbh = new connection_to_storage();
+            $dbh -> say() -> beginTransaction();
+            $registration = $dbh -> say() -> prepare("INSERT INTO User SET User.Login=:PDO_Login, User.Password=:PDO_Password, User.Name=:PDO_Name");
             $registration -> bindparam(':PDO_Login',$this -> login);
-            $registration -> bindvalue(':PDO_Password',$this -> password -> say_password());
+            $registration -> bindvalue(':PDO_Password',$this -> password -> say());
             $registration -> bindvalue(':PDO_Name',$this -> name);
             $registration -> execute();
-            $dbh -> Say_connection() -> commit();
+            $dbh -> say() -> commit();
         }
         catch (Exception $e)
         {
-            $dbh -> Say_connection() -> rollBack();
+            $dbh -> say() -> rollBack();
             http_response_code(400);
             exit($e->getMessage());
         }
         catch (Error $e)
         {
-            $dbh -> Say_connection() -> rollBack();
+            $dbh -> say() -> rollBack();
             http_response_code(400);
             exit ($e->getMessage());
         }
