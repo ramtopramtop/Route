@@ -17,16 +17,11 @@ class authorization implements ask
             $hashed_password = new hashed_password($source_query["password"]);
             $this -> password = $hashed_password;
         }
-        catch (Exception $e)
+        catch (Throwable $e)
         {
             http_response_code(400);
             exit ($e->getMessage());  
-        }
-        catch (Error $e)
-        {
-            http_response_code(400);
-            exit ($e->getMessage());
-        }
+        }        
     }
 
     function ask()
@@ -41,7 +36,7 @@ class authorization implements ask
             $query -> execute();
             $Registered_user=$query->fetch(PDO::FETCH_ASSOC);            
         }
-        catch (Error $e)
+        catch (Throwable $e)
         {
             http_response_code(400);
             exit ($e->getMessage());

@@ -13,16 +13,11 @@ class json_output implements post
             }
             $this -> post = $output;
         }
-        catch (Exception $e)
+        catch (Throwable $e)
         {
             http_response_code(400);
             exit ($e->getMessage());  
-        }
-        catch (Error $e)
-        {
-            http_response_code(400);
-            exit ($e->getMessage());
-        }
+        }        
     }
 
     function add_post($output)

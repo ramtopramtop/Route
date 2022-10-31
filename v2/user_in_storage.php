@@ -24,16 +24,11 @@ class user_in_storage
                 throw new Exception('Нет пользователя/неправильный пароль');
             }
         }
-        catch (Exception $e)
+        catch (Throwable $e)
         {
             http_response_code(400);
             exit ($e->getMessage());  
-        }
-        catch (Error $e)
-        {
-            http_response_code(400);
-            exit ($e->getMessage());
-        }
+        }        
     }
     
     function check_password()

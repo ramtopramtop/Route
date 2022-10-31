@@ -11,7 +11,7 @@ class json_source implements say
             require 'query_from_source.php'; //динамическое подключение файла с классом
             $this -> json_input = json_decode(file_get_contents('php://input'),true);
         }
-        catch (Error $e)
+        catch (Throwable $e)
         {
             http_response_code(400);
             exit ($e->getMessage());

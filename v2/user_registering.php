@@ -19,16 +19,11 @@ class user_registerung implements ask //регистрирующийся пол�
             $hashed_password = new hashed_password($source_query["password"]);
             $this -> password = $hashed_password;
         }
-        catch (Exception $e)
+        catch (Throwable $e)
         {
             http_response_code(400);
             exit ($e->getMessage());  
-        }
-        catch (Error $e)
-        {
-            http_response_code(400);
-            exit ($e->getMessage());
-        }
+        }        
     }
 
     function ask()
@@ -45,18 +40,12 @@ class user_registerung implements ask //регистрирующийся пол�
             $registration -> execute();
             $dbh -> say() -> commit();
         }
-        catch (Exception $e)
+        catch (Throwable $e)
         {
             $dbh -> say() -> rollBack();
             http_response_code(400);
             exit($e->getMessage());
-        }
-        catch (Error $e)
-        {
-            $dbh -> say() -> rollBack();
-            http_response_code(400);
-            exit ($e->getMessage());
-        }
+        }        
     }
 }
 ?>

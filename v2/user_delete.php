@@ -16,16 +16,11 @@ class user_delete implements ask
             $this -> login = $source_query["login"];
             $this -> password = new hashed_password($source_query["password"]);
         }
-        catch (Exception $e)
+        catch (Throwable $e)
         {
             http_response_code(400);
             exit ($e->getMessage());  
-        }
-        catch (Error $e)
-        {
-            http_response_code(400);
-            exit ($e->getMessage());
-        }
+        }        
     }
     
     function ask()
@@ -40,7 +35,7 @@ class user_delete implements ask
             $query -> execute();
             $Registered_user=$query->fetch(PDO::FETCH_ASSOC);            
         }
-        catch (Error $e)
+        catch (Throwable $e)
         {
             http_response_code(400);
             exit ($e->getMessage());
@@ -68,17 +63,11 @@ class user_delete implements ask
             $registration->execute();
             $dbh -> say() -> commit();
         }
-        catch (Exception $e)
+        catch (Throwable $e)
         {
-            
             http_response_code(400);
             exit($e->getMessage());
         }
-        catch (Error $e)
-        {
-            //$dbh -> say() -> rollBack();
-            http_response_code(400);
-            exit ($e->getMessage());
-        }
+        
     }
 }

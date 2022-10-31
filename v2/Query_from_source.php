@@ -14,16 +14,11 @@ class query_from_source implements say
             $this -> query_name = $source_query ["query"];
             require $this -> Say().'.php';//динамическое подключение файла с классом
         }
-        catch (Exception $e)
+        catch (Throwable $e)
         {
             http_response_code(400);
             exit ($e->getMessage());
-        }
-        catch (Error $e)
-        {
-            http_response_code(400);
-            exit ($e->getMessage());
-        }
+        }        
     }
     
     function say()

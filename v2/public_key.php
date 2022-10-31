@@ -10,7 +10,7 @@ class public_key implements ask
             require '../../conn/key.php';
             $this -> server_key = $publicKey;
         }
-        catch (Error $e)
+        catch (Throwable $e)
         {
             http_response_code(400);
             exit ($e->getMessage());
