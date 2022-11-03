@@ -33,5 +33,4 @@ $request_name = $query_tag -> say();
 $query_object = new $request_name($source -> say());
 $output = new json_output($query_object -> say());
 $output -> send_post();
-//$output -> ask($query_result);
 ?>

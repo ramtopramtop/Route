@@ -19,9 +19,7 @@ class public_key implements say
 
     function say()
     {
-        //require 'json_output.php';
-        //$post = new json_output(['server_key'=> $this -> server_key]);
-        //$post -> send_post();
+
         return ['server_key'=> $this -> server_key];
     }
 }
