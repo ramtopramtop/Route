@@ -1,5 +1,6 @@
 <?php
 require 'interface.php';
+require 'json_output.php';
 class json_source implements say
 {
     private $json_input;
@@ -30,5 +31,7 @@ $source = new json_source();
 $query_tag = new query_from_source($source -> say()); 
 $request_name = $query_tag -> say();
 $query_object = new $request_name($source -> say());
-$query_object -> ask();
+$output = new json_output($query_object -> say());
+$output -> send_post();
+//$output -> ask($query_result);
 ?>

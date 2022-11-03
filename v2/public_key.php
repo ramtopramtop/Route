@@ -1,5 +1,5 @@
 <?php
-class public_key implements ask
+class public_key implements say
 {
     private $server_key;
 
@@ -17,10 +17,11 @@ class public_key implements ask
         }
     }
 
-    function ask()
+    function say()
     {
-        require 'json_output.php';
-        $post = new json_output(['server_key'=> $this -> server_key]);
-        $post -> send_post();
+        //require 'json_output.php';
+        //$post = new json_output(['server_key'=> $this -> server_key]);
+        //$post -> send_post();
+        return ['server_key'=> $this -> server_key];
     }
 }
