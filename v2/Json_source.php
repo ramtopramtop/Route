@@ -3,13 +3,12 @@ require 'interface.php';
 require 'json_output.php';
 class json_source implements say
 {
-    private $json_input;
+    private array $json_input;
     
-    function __construct()
+    public function __construct()
     {
         try
         {
-            require 'query_from_source.php'; //динамическое подключение файла с классом
             $this -> json_input = json_decode(file_get_contents('php://input'),true);
         }
         catch (Throwable $e)
@@ -19,7 +18,7 @@ class json_source implements say
         }
     }
 
-    function say()
+    public function say()
     {
         return $this -> json_input;
     }
@@ -28,8 +27,10 @@ class json_source implements say
 //разделение создание объектов нужно для динамического подключения файлов с классами,
 //т.к. компилятор инициализирует объекты по порядку следования, а не по логике вложенности
 $source = new json_source();
-$query_tag = new query_from_source($source -> say()); 
+require 'query_from_source.php'; //динамическое подключение файла с классом
+$query_tag = new query_from_source($source -> say());
 $request_name = $query_tag -> say();
+require $request_name.'.php';//динамическое подключение файла с классом
 $query_object = new $request_name($source -> say());
 $output = new json_output($query_object -> say());
 $output -> send_post();

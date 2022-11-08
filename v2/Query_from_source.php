@@ -1,9 +1,9 @@
 <?php
 class query_from_source implements say
 {
-    private $query_name;
+    private string $query_name;
 
-    function __construct($source_query)
+    function __construct(array $source_query)
     {
         try
         {
@@ -11,8 +11,7 @@ class query_from_source implements say
             {
                 throw new Exception('Нет ключа запроса');
             }
-            $this -> query_name = $source_query ["query"];
-            require $this -> Say().'.php';//динамическое подключение файла с классом
+            $this -> query_name = $source_query ["query"];            
         }
         catch (Throwable $e)
         {

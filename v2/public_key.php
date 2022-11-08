@@ -1,9 +1,9 @@
 <?php
 class public_key implements say
 {
-    private $server_key;
+    private string $server_key;
 
-    function __construct()
+    public function __construct()
     {
         try
         {
@@ -17,7 +17,7 @@ class public_key implements say
         }
     }
 
-    function say()
+    public function say()
     {
 
         return ['server_key'=> $this -> server_key];
