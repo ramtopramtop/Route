@@ -1,9 +1,9 @@
 <?php
 class json_output implements post
 {
-    private $post;
+    private array $post;
 
-    function __construct($output)
+    public function __construct(array $output)
     {
         try
         {
@@ -20,12 +20,12 @@ class json_output implements post
         }        
     }
 
-    function add_post($output)
+    public function add_post(array $output)
     {
         $this -> post = $this -> post + $output;
     }
 
-    function send_post()
+    public function send_post()
     {
         header('Content-Type: application/json');
         echo json_encode($this -> post);
