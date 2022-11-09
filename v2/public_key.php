@@ -1,4 +1,7 @@
 <?php
+/**
+ * @testFunction testPublic_key
+ */
 class public_key implements say
 {
     private string $server_key;
@@ -17,9 +20,11 @@ class public_key implements say
         }
     }
 
+    /**
+     * @testFunction testPublic_keySay
+     */
     public function say()
     {
-
         return ['server_key'=> $this -> server_key];
     }
 }

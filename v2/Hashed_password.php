@@ -4,10 +4,7 @@ class hashed_password implements say, compare
 {
     private $password;
     private $hashed_password;
-
-    /**
-     * @testFunction testHashed_password__construct
-     */
+    
     function __construct($password)
     {
         try

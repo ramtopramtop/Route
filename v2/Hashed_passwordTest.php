@@ -39,15 +39,5 @@ class Hashed_passwordTest extends BaseTestCase {
         $pass = new hashed_password('ramtop');
         $hashed_pass = password_hash('ramtop', PASSWORD_BCRYPT);
         $this -> assertEquals(true, $pass -> compare($hashed_pass));
-    }
-
-
-    /**
-     * @covers hashed_password::__construct
-     **/
-    public function testHashed_password__construct() {
-        //$this->expectException(ExpectedException::class);
-        //$pass = new hashed_password('');
-        
-    }
+    }    
 }
