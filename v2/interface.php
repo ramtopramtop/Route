@@ -14,4 +14,5 @@ interface post
     public function add_post(array $output);
     public function send_post();
 }
+
 ?>

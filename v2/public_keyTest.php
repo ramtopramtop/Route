@@ -2,7 +2,7 @@
 namespace PHPTDD\Code\v2;
 use PHPTDD\BaseTestCase;
 use public_key;
-require '../../conn/key.php';
+//require '../../conn/key.php';
 
 class Public_keyTest extends BaseTestCase {
 
